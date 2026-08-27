@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows
+            goos: windows
+            goarch: amd64
+            binary: sql-mgr-server.exe
+            archive: zip
+          - os: linux
+            goos: linux
+            goarch: amd64
+            binary: sql-mgr-server
+            archive: tar.gz
+          - os: macos-intel
+            goos: darwin
+            goarch: amd64
+            binary: sql-mgr-server
+            archive: tar.gz
+          - os: macos-arm
+            goos: darwin
+            goarch: arm64
+            binary: sql-mgr-server
+            archive: tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          mkdir -p dist
+          go build -ldflags="-s -w" -o dist/${{ matrix.binary }} ./cmd/server/
+
+      - name: Prepare files (Unix)
+        if: matrix.os != 'windows'
+        run: |
+          cp config.yaml.example dist/config.yaml
+          cp README.md dist/
+          cat > dist/start.sh << 'EOF'
+          #!/bin/bash
+          cd "$(dirname "$0")"
+          echo "========================================"
+          echo "  Smile 思迈 · SQL 管理平台"
+          echo "========================================"
+          echo ""
+          echo "启动中..."
+          echo "访问地址: http://localhost:8080"
+          echo "默认账号: admin / admin123"
+          echo "按 Ctrl+C 停止服务"
+          echo ""
+          ./sql-mgr-server
+          EOF
+          chmod +x dist/start.sh
+          cat > dist/smile-sql.service << 'EOF'
+          [Unit]
+          Description=Smile SQL Manager
+          After=network.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory=/opt/smile-sql
+          ExecStart=/opt/smile-sql/sql-mgr-server
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          cd dist && tar czf ../smile-sql-${{ matrix.os }}.tar.gz . && cd ..
+
+      - name: Prepare files (Windows)
+        if: matrix.os == 'windows'
+        run: |
+          cp config.yaml.example dist/config.yaml
+          cp README.md dist/
+          cat > dist/start.bat << 'EOF'
+          @echo off
+          chcp 65001 >nul
+          cd /d "%~dp0"
+          echo ========================================
+          echo   Smile 思迈 · SQL 管理平台
+          echo ========================================
+          echo.
+          echo 启动中...
+          echo 访问地址: http://localhost:8080
+          echo 默认账号: admin / admin123
+          echo 按 Ctrl+C 停止服务
+          echo.
+          sql-mgr-server.exe
+          pause
+          EOF
+          cd dist && zip -r ../smile-sql-windows.zip . && cd ..
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: smile-sql-${{ matrix.os }}
+          path: |
+            smile-sql-*.tar.gz
+            smile-sql-*.zip
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f | head -20
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || 'latest' }}
+          name: Smile 思迈 ${{ github.ref_name || 'latest' }}
+          body: |
+            ## Smile 思迈 · SQL 管理平台 ${{ github.ref_name || 'latest' }}
+
+            ### 下载对应平台的压缩包，解压后直接运行：
+
+            | 平台 | 文件 |
+            |------|------|
+            | Windows (x64) | `smile-sql-windows.zip` |
+            | Linux (amd64) | `smile-sql-linux.tar.gz` |
+            | macOS (Intel) | `smile-sql-macos-intel.tar.gz` |
+            | macOS (Apple Silicon) | `smile-sql-macos-arm.tar.gz` |
+
+            ### 快速启动
+
+            **Windows**: 双击 `start.bat`
+
+            **macOS / Linux**:
+            ```bash
+            chmod +x start.sh
+            ./start.sh
+            ```
+
+            访问 http://localhost:8080，默认账号 `admin` / `admin123`
+          files: |
+            artifacts/*/smile-sql-*.tar.gz
+            artifacts/*/smile-sql-*.zip
+          draft: false
+          prerelease: false
