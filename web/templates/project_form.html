@@ -1,0 +1,63 @@
+{{define "content"}}
+<div class="page-title">{{if .Data.IsEdit}}编辑项目{{else}}新建项目{{end}}</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+<form id="project-form" style="max-width:480px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">项目编码 *</label>
+    <input type="text" name="code" value="{{if .Data.Project}}{{.Data.Project.Code}}{{end}}" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">项目名称 *</label>
+    <input type="text" name="name" value="{{if .Data.Project}}{{.Data.Project.Name}}{{end}}" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">负责团队</label>
+    <input type="text" name="owner_team" value="{{if .Data.Project}}{{.Data.Project.OwnerTeam}}{{end}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">当前 POM 版本</label>
+    <input type="text" name="pom_version_current" value="{{if .Data.Project}}{{.Data.Project.PomVersionCurrent}}{{end}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <button type="button" class="btn" onclick="submitForm()">{{if .Data.IsEdit}}保存{{else}}创建{{end}}</button>
+  <a href="/projects" class="btn" style="background:#666;">取消</a>
+</form>
+
+<script>
+var isEdit = {{if .Data.IsEdit}}true{{else}}false{{end}};
+var editId = {{if .Data.Project}}{{.Data.Project.ID}}{{else}}0{{end}};
+
+function submitForm() {
+  var form = document.getElementById('project-form');
+  var btn = form.querySelector('button[type="button"]');
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  var formData = new FormData(form);
+  var url = isEdit ? ('/projects/ajax/' + editId + '/edit') : '/projects/ajax/new';
+
+  fetch(url, {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.success) {
+      alert('\u2705 ' + data.message);
+      window.location.href = data.redirect;
+    } else {
+      alert('\u274c ' + data.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  })
+  .catch(function(error) {
+    alert('\u274c 请求失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+</script>
+{{end}}

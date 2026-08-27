@@ -1,0 +1,38 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+sql-mgr-server
+sql-mgr-server-*
+sql-mgr
+
+# Database files (contains user data)
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+/dist/
+/bin/
+/tmp/
+
+# Config with secrets (use config.yaml.example as template)
+config.yaml
+
+# Logs
+*.log

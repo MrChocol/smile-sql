@@ -1,0 +1,57 @@
+{{define "content"}}
+<div class="page-title">编辑环境</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+<form id="environment-form" style="max-width:480px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">环境编码 *</label>
+    <input type="text" name="code" value="{{.Data.Code}}" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">环境名称 *</label>
+    <input type="text" name="name" value="{{.Data.Name}}" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">排序权重</label>
+    <input type="number" name="promote_order" value="{{.Data.PromoteOrder}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <button type="button" class="btn" onclick="submitForm()">保存</button>
+  <a href="/environments" class="btn" style="background:#666;">取消</a>
+</form>
+
+<script>
+var envId = {{.Data.ID}};
+
+function submitForm() {
+  var form = document.getElementById('environment-form');
+  var btn = form.querySelector('button[type="button"]');
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  var formData = new FormData(form);
+
+  fetch('/environments/ajax/' + envId + '/edit', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.success) {
+      alert('\u2705 ' + data.message);
+      window.location.href = data.redirect;
+    } else {
+      alert('\u274c ' + data.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  })
+  .catch(function(error) {
+    alert('\u274c 请求失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+</script>
+{{end}}

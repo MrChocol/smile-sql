@@ -1,0 +1,63 @@
+{{define "content"}}
+<div class="page-title">项目管理</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+<p style="margin-bottom:12px;"><a href="/projects/new" class="btn">新建项目</a></p>
+<table>
+  <thead>
+    <tr><th>ID</th><th>编码</th><th>名称</th><th>负责团队</th><th>当前版本</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+  {{range .Data}}
+    <tr>
+      <td>{{.ID}}</td>
+      <td>{{.Code}}</td>
+      <td>{{.Name}}</td>
+      <td>{{.OwnerTeam}}</td>
+      <td>{{.PomVersionCurrent}}</td>
+      <td>
+        <a href="/projects/{{.ID}}" class="btn btn-sm btn-info">详情</a>
+        <a href="/projects/{{.ID}}/edit" class="btn btn-sm">编辑</a>
+        <a href="/versions?project={{.ID}}" class="btn btn-sm">版本</a>
+        <a href="/datasources?project={{.ID}}" class="btn btn-sm">数据源</a>
+        <button type="button" class="btn btn-sm btn-danger" onclick="deleteProject({{.ID}}, this)">删除</button>
+      </td>
+    </tr>
+  {{else}}
+    <tr><td colspan="6" style="text-align:center;color:#999;">暂无项目</td></tr>
+  {{end}}
+  </tbody>
+</table>
+
+<script>
+function deleteProject(id, btn) {
+  if (!confirm('确定要删除该项目吗？删除后不可恢复。')) {
+    return;
+  }
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '删除中...';
+
+  fetch('/projects/ajax/' + id + '/delete', {
+    method: 'POST',
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.success) {
+      alert('\u2705 ' + data.message);
+      window.location.href = data.redirect;
+    } else {
+      alert('\u274c ' + data.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  })
+  .catch(function(error) {
+    alert('\u274c 请求失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+</script>
+{{end}}

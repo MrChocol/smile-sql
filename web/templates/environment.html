@@ -1,0 +1,109 @@
+{{define "content"}}
+<div class="page-title">环境管理</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+
+<table>
+  <thead>
+    <tr><th>ID</th><th>编码</th><th>名称</th><th>排序</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+  {{range .Data}}
+    <tr>
+      <td>{{.ID}}</td>
+      <td>{{.Code}}</td>
+      <td>{{.Name}}</td>
+      <td>{{.PromoteOrder}}</td>
+      <td>
+        <a href="/environments/{{.ID}}/edit" class="btn btn-sm">编辑</a>
+        <button type="button" class="btn btn-sm btn-danger" onclick="deleteEnv({{.ID}}, this)">删除</button>
+      </td>
+    </tr>
+  {{else}}
+    <tr><td colspan="5" style="text-align:center;color:#999;">暂无环境</td></tr>
+  {{end}}
+  </tbody>
+</table>
+
+<h3 style="margin-top:24px;margin-bottom:12px;font-size:16px;">新建环境</h3>
+<form id="env-create-form" style="max-width:480px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">环境编码 *</label>
+    <input type="text" name="code" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">环境名称 *</label>
+    <input type="text" name="name" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">排序权重</label>
+    <input type="number" name="promote_order" value="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <button type="button" class="btn" onclick="submitCreateForm()">创建</button>
+</form>
+
+<script>
+function submitCreateForm() {
+  var form = document.getElementById('env-create-form');
+  var btn = form.querySelector('button[type="button"]');
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '创建中...';
+
+  var formData = new FormData(form);
+
+  fetch('/environments/ajax/new', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.success) {
+      alert('\u2705 ' + data.message);
+      window.location.href = data.redirect;
+    } else {
+      alert('\u274c ' + data.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  })
+  .catch(function(error) {
+    alert('\u274c 请求失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+
+function deleteEnv(id, btn) {
+  if (!confirm('确定要删除该环境吗？删除后不可恢复。')) {
+    return;
+  }
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '删除中...';
+
+  fetch('/environments/ajax/' + id + '/delete', {
+    method: 'POST',
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.success) {
+      alert('\u2705 ' + data.message);
+      window.location.href = data.redirect;
+    } else {
+      alert('\u274c ' + data.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  })
+  .catch(function(error) {
+    alert('\u274c 请求失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+</script>
+{{end}}

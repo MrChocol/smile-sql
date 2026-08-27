@@ -1,0 +1,513 @@
+{{define "content"}}
+{{if .Data}}
+<style>
+  /* ========== Project Detail Page ========== */
+  .project-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .project-header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .project-header .project-subtitle {
+    color: #6b7280;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .project-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .info-item {
+    background: #f9fafb;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border-left: 3px solid #e5e7eb;
+  }
+  .info-item.info-code { border-left-color: #2563eb; }
+  .info-item.info-team { border-left-color: #8b5cf6; }
+  .info-item.info-version { border-left-color: #16a34a; }
+  .info-item.info-date { border-left-color: #f59e0b; }
+  .info-item .info-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 4px;
+  }
+  .info-item .info-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+
+  /* ========== Pipeline Roadmap ========== */
+  .pipeline-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    padding: 20px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+  }
+  .pipeline-card h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pipeline-card h3 .pipeline-icon {
+    font-size: 18px;
+  }
+
+  .pipeline-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .legend-dot.success { background: #16a34a; }
+  .legend-dot.failed  { background: #dc2626; }
+  .legend-dot.pending { background: #f59e0b; }
+  .legend-dot.none    { background: #d1d5db; border: 2px solid #e5e7eb; }
+
+  /* Pipeline grid layout */
+  .pipeline-container {
+    position: relative;
+    min-width: 600px;
+  }
+
+  .pipeline-grid {
+    display: grid;
+    gap: 0;
+    position: relative;
+  }
+
+  /* Environment header */
+  .pipeline-header-row {
+    display: grid;
+    margin-bottom: 8px;
+  }
+  .pipeline-header-cell {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .pipeline-header-cell.env-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .pipeline-header-cell.env-label .env-code {
+    font-size: 11px;
+    color: #9ca3af;
+    font-weight: 400;
+  }
+  .pipeline-header-cell.release-col {
+    text-align: left;
+    padding-left: 8px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  /* Pipeline body */
+  .pipeline-body {
+    position: relative;
+  }
+
+  /* Vertical track lines */
+  .pipeline-tracks {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .pipeline-track {
+    border-left: 1px dashed #e5e7eb;
+    margin-left: 50%;
+  }
+  .pipeline-tracks > div:first-child {
+    margin-left: 0;
+    border-left: none;
+  }
+
+  /* Each pipeline row */
+  .pipeline-row {
+    display: grid;
+    align-items: center;
+    position: relative;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+    z-index: 1;
+  }
+  .pipeline-row:hover {
+    background: #f9fafb;
+  }
+  .pipeline-row:last-child {
+    border-bottom: none;
+  }
+
+  /* Release info cell */
+  .release-info {
+    padding: 4px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .release-info .release-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a1a2e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .release-info .release-title a {
+    color: #1a1a2e;
+    text-decoration: none;
+  }
+  .release-info .release-title a:hover {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+  .release-info .release-meta {
+    font-size: 11px;
+    color: #9ca3af;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .release-info .release-meta .script-count {
+    background: #f3f4f6;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+
+  /* Environment node cell */
+  .env-node-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 40px;
+  }
+
+  /* Horizontal connecting line */
+  .env-node-cell::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e5e7eb;
+    transform: translateY(-50%);
+    z-index: 0;
+  }
+  /* First env cell (2nd child of the row, after release-info): line starts from center */
+  .pipeline-row > div:nth-child(2)::before {
+    left: 50%;
+  }
+  /* Last env cell: line ends at center */
+  .pipeline-row > div:last-child::before {
+    right: 50%;
+  }
+
+  /* Colored segment of the line (for progress indication) */
+  .env-node-cell .line-fill {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    transform: translateY(-50%);
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .pipeline-row:hover .env-node-cell .line-fill {
+    opacity: 1;
+  }
+  .pipeline-row > div:nth-child(2) .line-fill {
+    left: 50%;
+  }
+  .pipeline-row > div:last-child .line-fill {
+    right: 50%;
+  }
+  .line-fill.success { background: #16a34a; }
+  .line-fill.failed  { background: #dc2626; }
+  .line-fill.pending { background: #f59e0b; }
+  .line-fill.none    { background: #d1d5db; }
+
+  /* Node dot */
+  .node-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+  }
+  .node-dot:hover {
+    transform: scale(1.25);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .node-dot.success { background: #16a34a; }
+  .node-dot.failed  { background: #dc2626; }
+  .node-dot.pending {
+    background: #f59e0b;
+    animation: pulse-dot 2s infinite;
+  }
+  .node-dot.none {
+    background: #fff;
+    border: 2px solid #d1d5db;
+    box-shadow: none;
+  }
+  .node-dot.none:hover {
+    border-color: #9ca3af;
+    transform: scale(1.25);
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 0 0 rgba(245,158,11,0.4); }
+    50%      { box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0 0 6px rgba(245,158,11,0); }
+  }
+
+  /* Tooltip */
+  .node-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a2e;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, visibility 0.15s;
+    pointer-events: none;
+  }
+  .node-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1a1a2e;
+  }
+  .node-dot:hover + .node-tooltip,
+  .env-node-cell:hover .node-tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+  .node-tooltip .tooltip-status {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .node-tooltip .tooltip-env {
+    font-size: 11px;
+    color: #9ca3af;
+  }
+
+  /* Empty state */
+  .pipeline-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+  .pipeline-empty .empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+</style>
+
+<div class="project-header">
+  <div>
+    <h1>{{.Data.Project.Name}}</h1>
+    <div class="project-subtitle">
+      项目编码：{{.Data.Project.Code}} · 团队：{{.Data.Project.OwnerTeam}}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="/projects" class="btn" style="background:#6b7280;">← 返回列表</a>
+    <a href="/projects/{{.Data.Project.ID}}/edit" class="btn">编辑项目</a>
+    <a href="/releases?project={{.Data.Project.ID}}" class="btn btn-info">查看发布</a>
+  </div>
+</div>
+
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+
+<!-- 项目基本信息 -->
+<div class="card">
+  <h3>项目概览</h3>
+  <div class="project-info-grid">
+    <div class="info-item info-code">
+      <div class="info-label">项目编码</div>
+      <div class="info-value">{{.Data.Project.Code}}</div>
+    </div>
+    <div class="info-item info-team">
+      <div class="info-label">负责团队</div>
+      <div class="info-value">{{if .Data.Project.OwnerTeam}}{{.Data.Project.OwnerTeam}}{{else}}—{{end}}</div>
+    </div>
+    <div class="info-item info-version">
+      <div class="info-label">当前版本</div>
+      <div class="info-value">{{if .Data.Project.PomVersionCurrent}}{{.Data.Project.PomVersionCurrent}}{{else}}—{{end}}</div>
+    </div>
+    <div class="info-item info-date">
+      <div class="info-label">创建时间</div>
+      <div class="info-value" style="font-size:13px;">{{.Data.Project.CreatedAt}}</div>
+    </div>
+  </div>
+</div>
+
+<!-- 环境执行路线图 -->
+<div class="pipeline-card">
+  <h3>
+    <span class="pipeline-icon">🌿</span>
+    环境执行路线图
+    <span style="font-size:12px;font-weight:400;color:#9ca3af;margin-left:4px;">（最近 {{len .Data.PipelineItems}} 个发布）</span>
+  </h3>
+
+  <div class="pipeline-legend">
+    <div class="legend-item">
+      <span class="legend-dot success"></span>
+      <span>成功</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot failed"></span>
+      <span>失败</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot pending"></span>
+      <span>待执行</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-dot none"></span>
+      <span>未执行</span>
+    </div>
+  </div>
+
+  {{if .Data.PipelineItems}}
+  {{$envs := .Data.Environments}}
+  {{$envCount := len $envs}}
+  <div class="pipeline-container">
+    <!-- Header row -->
+    <div class="pipeline-header-row" style="grid-template-columns: 260px repeat({{$envCount}}, 1fr);">
+      <div class="pipeline-header-cell release-col">发布 / 脚本</div>
+      {{range $envs}}
+      <div class="pipeline-header-cell env-label">
+        <span>{{.Name}}</span>
+        <span class="env-code">{{.Code}}</span>
+      </div>
+      {{end}}
+    </div>
+
+    <!-- Pipeline body -->
+    <div class="pipeline-body">
+      <!-- Background track lines -->
+      <div class="pipeline-tracks" style="grid-template-columns: 260px repeat({{$envCount}}, 1fr);">
+        <div class="pipeline-track"></div>
+        {{range $envs}}
+        <div class="pipeline-track"></div>
+        {{end}}
+      </div>
+
+      <!-- Release rows -->
+      {{range $item := .Data.PipelineItems}}
+      <div class="pipeline-row" style="grid-template-columns: 260px repeat({{$envCount}}, 1fr); display: grid;">
+        <!-- Release info -->
+        <div class="release-info">
+          <div class="release-title">
+            <a href="/releases/{{$item.ReleaseID}}" title="{{$item.ReleaseTitle}}">{{$item.ReleaseTitle}}</a>
+          </div>
+          <div class="release-meta">
+            <span class="script-count">{{$item.ScriptCount}} 脚本</span>
+            <span>{{$item.CreatedBy}}</span>
+          </div>
+        </div>
+
+        <!-- Environment nodes -->
+        {{range $env := $envs}}
+        {{$status := index $item.EnvStatus $env.ID}}
+        <div class="env-node-cell">
+          <div class="line-fill {{$status}}"></div>
+          <div class="node-dot {{$status}}"></div>
+          <div class="node-tooltip">
+            <div class="tooltip-status">
+              {{if eq $status "success"}}✅ 执行成功
+              {{else if eq $status "failed"}}❌ 执行失败
+              {{else if eq $status "pending"}}⏳ 待执行
+              {{else}}⚪ 未执行
+              {{end}}
+            </div>
+            <div class="tooltip-env">{{$env.Name}} 环境</div>
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </div>
+  {{else}}
+  <div class="pipeline-empty">
+    <div class="empty-icon">📭</div>
+    <div>该项目暂无发布记录</div>
+    <div style="margin-top:8px;">
+      <a href="/releases/new" class="btn btn-sm">创建第一个发布</a>
+    </div>
+  </div>
+  {{end}}
+</div>
+
+<!-- 快捷操作 -->
+<div class="card">
+  <h3>快捷操作</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+    <a href="/scripts?project={{.Data.Project.ID}}" class="btn" style="text-align:center;padding:12px 16px;">📝 脚本列表</a>
+    <a href="/releases/new" class="btn btn-info" style="text-align:center;padding:12px 16px;">🚀 新建发布</a>
+    <a href="/executions?project={{.Data.Project.ID}}" class="btn btn-success" style="text-align:center;padding:12px 16px;">▶️ 执行记录</a>
+    <a href="/datasources?project={{.Data.Project.ID}}" class="btn btn-warning" style="text-align:center;padding:12px 16px;">🗄️ 数据源</a>
+  </div>
+</div>
+{{end}}
+{{end}}

@@ -1,0 +1,186 @@
+{{define "content"}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/projects" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">项目配置</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/datasources" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">数据源</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/scripts" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">脚本录入</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/releases" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">发布编排</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/executions" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">推送执行</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/archives" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">归档提交</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">8</div>
+    <span class="step-label">系统配置</span>
+  </div>
+</div>
+
+<div class="page-title">Git 配置</div>
+
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+{{if .Data.Success}}<div class="flash flash-success">{{.Data.Success}}</div>{{end}}
+
+<div class="card" style="max-width:560px;">
+  <p style="margin-bottom:16px;">
+    {{if .Data.IsConfigured}}
+    <span class="badge badge-success">已配置</span>
+    <span style="font-size:13px;color:#666;margin-left:8px;">Git 仓库已配置，归档功能可用</span>
+    {{else}}
+    <span class="badge badge-draft">未配置</span>
+    <span style="font-size:13px;color:#666;margin-left:8px;">配置 Git 仓库后可使用归档提交功能</span>
+    {{end}}
+  </p>
+</div>
+
+<form id="git-config-form" style="max-width:560px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <h3 style="font-size:16px;margin-bottom:16px;">仓库信息</h3>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">Git 仓库地址 *</label>
+    <input type="text" name="git_repo_url" value="{{if .Data.Settings}}{{.Data.Settings.GitRepoURL}}{{end}}" required placeholder="https://github.com/org/sql-scripts.git" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">
+      访问令牌
+      {{if .Data.Settings}}
+        {{if .Data.Settings.GitTokenEnc}}
+        <span class="badge badge-success" style="margin-left:8px;font-size:11px;">已配置</span>
+        {{else}}
+        <span class="badge badge-draft" style="margin-left:8px;font-size:11px;">未配置</span>
+        {{end}}
+      {{end}}
+    </label>
+    <div class="pwd-wrap">
+      <input type="password" id="tokenInput" name="git_token" placeholder="{{if .Data.IsConfigured}}留空不修改{{else}}输入 Personal Access Token{{end}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+      <button type="button" class="pwd-toggle" onclick="toggleToken()">显示</button>
+    </div>
+    <span style="font-size:12px;color:#888;">
+      {{if .Data.IsConfigured}}令牌已加密保存，修改请输入新令牌，留空则不修改{{else}}请输入 Personal Access Token，将加密存储{{end}}
+    </span>
+  </p>
+
+  <h3 style="font-size:16px;margin-bottom:12px;margin-top:20px;">提交信息（可选）</h3>
+  <p style="font-size:12px;color:#888;margin-bottom:12px;">用于 Git 提交记录中的作者信息，不填则使用默认值</p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">提交用户名</label>
+    <input type="text" name="git_username" value="{{if .Data.Settings}}{{.Data.Settings.GitUsername}}{{end}}" placeholder="sql-mgr-bot" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">提交邮箱</label>
+    <input type="email" name="git_email" value="{{if .Data.Settings}}{{.Data.Settings.GitEmail}}{{end}}" placeholder="bot@example.com" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+
+  <div style="margin-top:20px;">
+    <button type="button" class="btn" id="save-btn" onclick="saveGitConfig()">保存配置</button>
+    <button type="button" class="btn btn-info" id="test-btn" style="margin-left:8px;" onclick="testGitConnection()">测试连接</button>
+  </div>
+</form>
+
+<script>
+function toggleToken() {
+  var input = document.getElementById('tokenInput');
+  var btn = input.nextElementSibling;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '隐藏';
+  } else {
+    input.type = 'password';
+    btn.textContent = '显示';
+  }
+}
+
+function saveGitConfig() {
+  var form = document.getElementById('git-config-form');
+  var btn = document.getElementById('save-btn');
+  var formData = new FormData(form);
+
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  fetch('/settings/git/ajax', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      btn.disabled = false;
+      btn.textContent = '保存配置';
+      // Refresh the page to show updated status
+      location.reload();
+    } else {
+      alert('❌ ' + data.message);
+      btn.disabled = false;
+      btn.textContent = '保存配置';
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '保存配置';
+  });
+}
+
+function testGitConnection() {
+  var form = document.getElementById('git-config-form');
+  var btn = document.getElementById('test-btn');
+  var formData = new FormData(form);
+
+  btn.disabled = true;
+  btn.textContent = '测试中...';
+
+  fetch('/settings/git/ajax/test', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+    } else {
+      alert('❌ ' + data.message);
+    }
+    btn.disabled = false;
+    btn.textContent = '测试连接';
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '测试连接';
+  });
+}
+</script>
+{{end}}

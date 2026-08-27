@@ -1,0 +1,32 @@
+{{define "content"}}
+<div class="login-wrap" style="max-width: 480px;">
+  <h2>查看数据源密码</h2>
+  {{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+
+  {{if .Data.Verified}}
+  {{/* --- Success: temporarily display plaintext --- */}}
+  <div style="background:#fff3cd;border:1px solid #ffc107;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:13px;color:#856404;">
+    <strong>注意：</strong>密码仅临时展示，请勿留存日志或截图。关闭此页面后将不再可见。
+  </div>
+  <table>
+    <tr><th>数据源 ID</th><td>{{.Data.DatasourceID}}</td></tr>
+    <tr><th>数据源名称</th><td>{{.Data.DatasourceName}}</td></tr>
+    <tr><th>明文密码</th><td><code style="font-size:15px;word-break:break-all;">{{.Data.Plaintext}}</code></td></tr>
+  </table>
+  <p style="margin-top:16px;">
+    <a class="btn" href="/datasources">返回数据源列表</a>
+  </p>
+
+  {{else}}
+  {{/* --- Form: enter management password --- */}}
+  <form method="POST" action="/datasources/{{.Data.DatasourceID}}/reveal">
+    <label for="admin_password">管理密码</label>
+    <input type="password" id="admin_password" name="admin_password" required autofocus>
+    <button type="submit">验证并查看</button>
+  </form>
+  <p style="text-align:center;margin-top:16px;font-size:12px;color:#999;">
+    输入管理密码以查看数据源明文密码
+  </p>
+  {{end}}
+</div>
+{{end}}

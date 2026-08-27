@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL 统一管理平台 — 测试用例清单</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #f5f6f8; color: #1a1a2e; line-height: 1.6; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    h1 { font-size: 26px; margin-bottom: 8px; }
+    .subtitle { color: #5c6779; font-size: 14px; margin-bottom: 32px; }
+    h2 { font-size: 20px; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #1a1a2e; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 24px; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+    th { background: #f0f0f3; font-weight: 600; }
+    .pass { color: #16a34a; font-weight: 600; }
+    .fail { color: #dc2626; font-weight: 600; }
+    .pending { color: #d97706; font-weight: 600; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .tag-p0 { background: #fee2e2; color: #b91c1c; }
+    .tag-p1 { background: #fef3c7; color: #b45309; }
+    .tag-p2 { background: #dbeafe; color: #1d4ed8; }
+    .stat { display: inline-block; margin-right: 24px; padding: 8px 16px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .stat-num { font-size: 22px; font-weight: 700; }
+    .stat-label { font-size: 12px; color: #5c6779; }
+    .summary { margin-bottom: 32px; }
+    .note { background: #fff7ed; border-left: 4px solid #f97316; padding: 12px 16px; border-radius: 4px; font-size: 13px; margin: 12px 0 24px; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SQL 统一管理平台 — 测试用例清单</h1>
+    <p class="subtitle">版本: v0.1.0 | 日期: 2026-08-21 | 提交: Sprint 3 交付</p>
+
+    <div class="summary">
+      <div class="stat"><span class="stat-num" id="total">0</span><br><span class="stat-label">总计</span></div>
+      <div class="stat"><span class="stat-num pass" id="p0">0</span><br><span class="stat-label">P0 高优先级</span></div>
+      <div class="stat"><span class="stat-num" id="p1">0</span><br><span class="stat-label">P1 中优先级</span></div>
+      <div class="stat"><span class="stat-num" id="p2">0</span><br><span class="stat-label">P2 低优先级</span></div>
+    </div>
+
+    <div class="note">
+      <strong>测试前置条件:</strong><br>
+      1. 使用 <code>go build -o sql-mgr ./cmd/server</code> 构建二进制<br>
+      2. 确保 <code>config.yaml</code> 存在且可读写<br>
+      3. 准备一个可连通的 MySQL 数据源用于执行引擎测试<br>
+      4. 准备一个可连通的 Git 仓库用于归档测试<br>
+      5. 首次启动会自动创建 <code>admin/admin123</code> 管理员账户
+    </div>
+
+    <h2>一、登录与认证</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-AUTH-01</td><td><span class="tag tag-p0">P0</span></td><td>正确登录</td><td>访问 /login，输入 admin/admin123，点击登录</td><td>跳转到 /projects 页面</td><td class="pending">待测</td></tr>
+        <tr><td>TC-AUTH-02</td><td><span class="tag tag-p0">P0</span></td><td>错误密码登录</td><td>输入 admin/wrongpassword</td><td>页面提示"用户名或密码错误"</td><td class="pending">待测</td></tr>
+        <tr><td>TC-AUTH-03</td><td><span class="tag tag-p0">P0</span></td><td>未登录访问受保护页面</td><td>清除 cookie 后直接访问 /projects</td><td>重定向到 /login</td><td class="pending">待测</td></tr>
+        <tr><td>TC-AUTH-04</td><td><span class="tag tag-p1">P1</span></td><td>登出</td><td>点击页面右上角"登出"</td><td>重定向到 /login，cookie 失效</td><td class="pending">待测</td></tr>
+        <tr><td>TC-AUTH-05</td><td><span class="tag tag-p2">P2</span></td><td>Session 过期</td><td>等待7天后访问受保护页面</td><td>重定向到 /login</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>二、项目管理</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-PROJ-01</td><td><span class="tag tag-p0">P0</span></td><td>创建项目</td><td>访问 /projects/new，填写编码/名称/团队/POM版本，提交</td><td>项目列表中显示新项目</td><td class="pending">待测</td></tr>
+        <tr><td>TC-PROJ-02</td><td><span class="tag tag-p0">P0</span></td><td>必填字段校验</td><td>编码或名称留空，提交</td><td>页面提示"项目编码和名称为必填项"</td><td class="pending">待测</td></tr>
+        <tr><td>TC-PROJ-03</td><td><span class="tag tag-p1">P1</span></td><td>编辑项目</td><td>点击项目编辑，修改名称，提交</td><td>项目列表中显示更新后的名称</td><td class="pending">待测</td></tr>
+        <tr><td>TC-PROJ-04</td><td><span class="tag tag-p1">P1</span></td><td>编码唯一性</td><td>创建两个相同编码的项目</td><td>第二次创建失败并报错</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>三、版本管理</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-VER-01</td><td><span class="tag tag-p0">P0</span></td><td>创建版本</td><td>在 /versions 页面选择项目，输入版本号，提交</td><td>版本列表中显示新版本</td><td class="pending">待测</td></tr>
+        <tr><td>TC-VER-02</td><td><span class="tag tag-p0">P0</span></td><td>设置当前版本</td><td>点击版本的"设为当前"按钮</td><td>该版本标记为当前，其他版本取消</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>四、环境管理</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-ENV-01</td><td><span class="tag tag-p0">P0</span></td><td>创建环境</td><td>在 /environments 页面填写编码/名称/排序，提交</td><td>环境列表中显示新环境</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>五、数据源管理</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-DS-01</td><td><span class="tag tag-p0">P0</span></td><td>创建数据源</td><td>访问 /datasources/new，选择项目/环境，填写连接信息，提交</td><td>数据源列表中显示新数据源</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DS-02</td><td><span class="tag tag-p0">P0</span></td><td>密码加密存储</td><td>创建数据源后检查数据库 password_enc 字段</td><td>密文存储，非明文</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DS-03</td><td><span class="tag tag-p0">P0</span></td><td>查看密码—二次验证</td><td>点击数据源的"查看密码"，输入管理密码</td><td>正确密码后显示明文；错误密码提示错误</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DS-04</td><td><span class="tag tag-p1">P1</span></td><td>编辑数据源</td><td>修改数据源主机/端口，密码留空，提交</td><td>信息更新成功，密码保持原密文不变</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DS-05</td><td><span class="tag tag-p1">P1</span></td><td>项目/环境筛选</td><td>使用下拉筛选数据源列表</td><td>仅显示符合条件的数据源</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>六、脚本管理</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-SCRIPT-01</td><td><span class="tag tag-p0">P0</span></td><td>创建脚本</td><td>访问 /scripts/new，选择项目，填写标题/描述/内容/提交人，提交</td><td>脚本列表中显示新脚本，状态为 draft</td><td class="pending">待测</td></tr>
+        <tr><td>TC-SCRIPT-02</td><td><span class="tag tag-p0">P0</span></td><td>必填字段校验</td><td>标题/描述/提交人留空，提交</td><td>页面提示相应字段不能为空</td><td class="pending">待测</td></tr>
+        <tr><td>TC-SCRIPT-03</td><td><span class="tag tag-p1">P1</span></td><td>项目筛选</td><td>在脚本列表页面使用项目下拉筛选</td><td>仅显示该项目下的脚本</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>七、发布管理</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-REL-01</td><td><span class="tag tag-p0">P0</span></td><td>创建发布</td><td>访问 /releases/new，选择项目/版本，填写标题，提交</td><td>发布列表中显示新发布，状态为 draft</td><td class="pending">待测</td></tr>
+        <tr><td>TC-REL-02</td><td><span class="tag tag-p0">P0</span></td><td>添加脚本到发布</td><td>在发布详情页选择脚本添加</td><td>发布详情页显示已关联的脚本</td><td class="pending">待测</td></tr>
+        <tr><td>TC-REL-03</td><td><span class="tag tag-p1">P1</span></td><td>移除发布脚本</td><td>点击已关联脚本的"移除"按钮</td><td>脚本从发布中移除</td><td class="pending">待测</td></tr>
+        <tr><td>TC-REL-04</td><td><span class="tag tag-p1">P1</span></td><td>可选脚本列表</td><td>查看发布详情页的可选脚本区域</td><td>仅显示同项目下未关联的脚本</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>八、执行引擎</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-EXEC-01</td><td><span class="tag tag-p0">P0</span></td><td>推送执行（网络连通）</td><td>在发布详情页选择数据源，点击推送执行</td><td>创建执行记录，状态自动标记为 success 或 failed</td><td class="pending">待测</td></tr>
+        <tr><td>TC-EXEC-02</td><td><span class="tag tag-p0">P0</span></td><td>推送执行（网络不通）</td><td>对不可达的数据源推送执行</td><td>执行记录标记为 failed，错误信息包含连接失败原因</td><td class="pending">待测</td></tr>
+        <tr><td>TC-EXEC-03</td><td><span class="tag tag-p0">P0</span></td><td>手动标记</td><td>在执行记录页面点击"标记成功"或"标记失败"</td><td>记录状态更新，mark_method 标记为 manual</td><td class="pending">待测</td></tr>
+        <tr><td>TC-EXEC-04</td><td><span class="tag tag-p1">P1</span></td><td>执行记录列表筛选</td><td>使用项目/环境/状态筛选条件</td><td>列表仅显示符合条件的记录</td><td class="pending">待测</td></tr>
+        <tr><td>TC-EXEC-05</td><td><span class="tag tag-p1">P1</span></td><td>执行记录详情</td><td>点击执行记录查看详情</td><td>显示完整执行信息含脚本内容、错误信息</td><td class="pending">待测</td></tr>
+        <tr><td>TC-EXEC-06</td><td><span class="tag tag-p2">P2</span></td><td>多脚本批量执行</td><td>对包含多个脚本的发布推送执行</td><td>每个脚本均生成独立的执行记录</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>九、归档管理</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-ARCH-01</td><td><span class="tag tag-p0">P0</span></td><td>创建归档（含版本自增）</td><td>在 /archives/new 选择发布，填写 commit message，勾选版本自增，提交</td><td>Git 仓库新增 .sql 文件（含文件头），archive_log 记录生成，版本号递增</td><td class="pending">待测</td></tr>
+        <tr><td>TC-ARCH-02</td><td><span class="tag tag-p0">P0</span></td><td>归档后状态更新</td><td>归档完成后检查发布和脚本状态</td><td>发布状态变为 archived，脚本状态变为 archived</td><td class="pending">待测</td></tr>
+        <tr><td>TC-ARCH-03</td><td><span class="tag tag-p0">P0</span></td><td>SQL 文件头信息</td><td>检查 Git 仓库中提交的 .sql 文件内容</td><td>包含项目名/标题/描述/创建人/创建时间/归档时间</td><td class="pending">待测</td></tr>
+        <tr><td>TC-ARCH-04</td><td><span class="tag tag-p1">P1</span></td><td>归档（无版本自增）</td><td>不勾选版本自增，提交归档</td><td>Git 提交成功，版本号不变，version_from == version_to</td><td class="pending">待测</td></tr>
+        <tr><td>TC-ARCH-05</td><td><span class="tag tag-p1">P1</span></td><td>归档列表</td><td>访问 /archives</td><td>显示所有归档记录，按时间倒序</td><td class="pending">待测</td></tr>
+        <tr><td>TC-ARCH-06</td><td><span class="tag tag-p1">P1</span></td><td>Git 推送失败回滚</td><td>配置错误的 Git 仓库地址后尝试归档</td><td>归档失败，版本号不递增，发布/脚本状态不变</td><td class="pending">待测</td></tr>
+        <tr><td>TC-ARCH-07</td><td><span class="tag tag-p2">P2</span></td><td>未配置 Git 时的提示</td><td>不配置 git_repo_url，尝试归档</td><td>页面提示"归档引擎未配置"</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>十、部署与运维</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-DEPLOY-01</td><td><span class="tag tag-p0">P0</span></td><td>单二进制构建</td><td>执行 <code>go build -o sql-mgr ./cmd/server</code></td><td>生成单个可执行文件，无外部依赖</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DEPLOY-02</td><td><span class="tag tag-p0">P0</span></td><td>离线 vendor 构建</td><td>执行 <code>go build -o sql-mgr ./cmd/server</code>（在 vendor 目录存在时）</td><td>不访问网络即可编译成功</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DEPLOY-03</td><td><span class="tag tag-p0">P0</span></td><td>数据库自动初始化</td><td>删除 sql-mgr.db 后启动服务</td><td>自动创建表结构和默认 admin 用户</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DEPLOY-04</td><td><span class="tag tag-p1">P1</span></td><td>配置文件加载</td><td>修改 config.yaml 的 server_port 后重启</td><td>服务在新端口监听</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DEPLOY-05</td><td><span class="tag tag-p1">P1</span></td><td>环境变量覆盖</td><td>设置 SQLMGR_SERVER_PORT=9090 后启动</td><td>服务在 9090 端口监听</td><td class="pending">待测</td></tr>
+        <tr><td>TC-DEPLOY-06</td><td><span class="tag tag-p2">P2</span></td><td>优雅关闭</td><td>发送 SIGINT/SIGTERM 信号</td><td>服务在10秒内完成关闭并输出日志</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+    <h2>十一、安全测试</h2>
+    <table>
+      <thead>
+        <tr><th>ID</th><th>优先级</th><th>测试项</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TC-SEC-01</td><td><span class="tag tag-p0">P0</span></td><td>密码加密存储验证</td><td>直接查询 SQLite 中 datasource.password_enc</td><td>值为密文，非明文密码</td><td class="pending">待测</td></tr>
+        <tr><td>TC-SEC-02</td><td><span class="tag tag-p0">P0</span></td><td>查看密码—错误管理密码</td><td>输入错误的管理密码尝试查看数据源密码</td><td>提示"管理密码错误"，不显示明文</td><td class="pending">待测</td></tr>
+        <tr><td>TC-SEC-03</td><td><span class="tag tag-p0">P0</span></td><td>查看密码—正确管理密码</td><td>输入正确的管理密码查看数据源密码</td><td>显示明文密码，页面临时展示</td><td class="pending">待测</td></tr>
+        <tr><td>TC-SEC-04</td><td><span class="tag tag-p1">P1</span></td><td>Session 劫持防护</td><td>伪造 cookie 值访问受保护页面</td><td>重定向到 /login</td><td class="pending">待测</td></tr>
+        <tr><td>TC-SEC-05</td><td><span class="tag tag-p2">P2</span></td><td>Stub 模式下密码查看</td><td>不配置 admin_pw_hash，尝试查看密码</td><td>VerifyAdminPw 返回 false（AES模式）或 true（Stub模式）</td><td class="pending">待测</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+  <script>
+    function count() {
+      let total = 0, p0 = 0, p1 = 0, p2 = 0;
+      document.querySelectorAll('tbody tr').forEach(tr => {
+        total++;
+        const tag = tr.querySelector('.tag');
+        if (tag.classList.contains('tag-p0')) p0++;
+        else if (tag.classList.contains('tag-p1')) p1++;
+        else if (tag.classList.contains('tag-p2')) p2++;
+      });
+      document.getElementById('total').textContent = total;
+      document.getElementById('p0').textContent = p0;
+      document.getElementById('p1').textContent = p1;
+      document.getElementById('p2').textContent = p2;
+    }
+    count();
+  </script>
+</body>
+</html>

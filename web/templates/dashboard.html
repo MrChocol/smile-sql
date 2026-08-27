@@ -1,0 +1,75 @@
+{{define "content"}}
+<div class="page-title">工作台 <span style="font-size:14px;font-weight:400;color:#6b7280;margin-left:8px;">{{.Data.CurrentDate}} {{.Data.CurrentWeekday}}</span></div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+
+<!-- 统计卡片 -->
+<div class="dashboard-grid">
+  <div class="stat-card scripts">
+    <div class="stat-label">项目总数</div>
+    <div class="stat-value">{{.Data.Stats.ProjectCount}}</div>
+  </div>
+  <div class="stat-card releases">
+    <div class="stat-label">待处理脚本</div>
+    <div class="stat-value">{{.Data.Stats.PendingScriptCount}}</div>
+  </div>
+  <div class="stat-card executions">
+    <div class="stat-label">本月执行</div>
+    <div class="stat-value">{{.Data.Stats.MonthlyExecutionCount}}</div>
+  </div>
+  <div class="stat-card archives">
+    <div class="stat-label">归档次数</div>
+    <div class="stat-value">{{.Data.Stats.ArchiveCount}}</div>
+  </div>
+</div>
+
+<!-- 快捷入口 -->
+<div class="card">
+  <h3>快捷入口</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+    <a href="/scripts" class="btn" style="text-align:center;padding:12px 16px;">📝 脚本列表</a>
+    <a href="/releases/new" class="btn btn-info" style="text-align:center;padding:12px 16px;">🚀 新建发布</a>
+    <a href="/executions" class="btn btn-success" style="text-align:center;padding:12px 16px;">▶️ 执行记录</a>
+    <a href="/archives/new" class="btn btn-warning" style="text-align:center;padding:12px 16px;">📦 发起归档</a>
+  </div>
+</div>
+
+<!-- 最近执行 -->
+<div class="card">
+  <h3>最近执行记录</h3>
+  {{if .Data.RecentExecutions}}
+  <table>
+    <thead>
+      <tr><th>ID</th><th>脚本</th><th>项目</th><th>环境</th><th>状态</th><th>执行人</th><th>执行时间</th></tr>
+    </thead>
+    <tbody>
+    {{range .Data.RecentExecutions}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td>{{.ScriptTitle}}</td>
+        <td>{{.ProjectName}}</td>
+        <td>{{.EnvironmentName}}</td>
+        <td>
+          {{if eq .Status "success"}}
+          <span class="badge badge-success">成功</span>
+          {{else if eq .Status "failed"}}
+          <span class="badge badge-failed" title="失败原因：{{if .Error}}{{.Error}}{{else}}未知错误{{end}}" style="cursor:help;">失败</span>
+          {{else if eq .Status "pending"}}
+          <span class="badge badge-pending">待执行</span>
+          {{else if eq .Status "manual_marked"}}
+          <span class="badge badge-manual_marked">手动标记</span>
+          {{else}}
+          <span class="badge">{{.Status}}</span>
+          {{end}}
+        </td>
+        <td>{{.ExecutedBy}}</td>
+        <td>{{if .ExecutedAt}}{{.ExecutedAt}}{{else}}—{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <p style="margin-top:12px;text-align:right;"><a href="/executions">查看全部 →</a></p>
+  {{else}}
+  <p style="color:#999;text-align:center;padding:20px 0;">暂无执行记录</p>
+  {{end}}
+</div>
+{{end}}

@@ -1,0 +1,177 @@
+{{define "content"}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/projects" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">项目配置</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/datasources" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">数据源</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/scripts" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">脚本录入</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/releases" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">发布编排</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">5</div>
+    <span class="step-label">推送执行</span>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/archives" class="step-link">
+      <div class="step-num">6</div>
+      <span class="step-label">归档提交</span>
+    </a>
+  </div>
+</div>
+
+<div class="page-title">执行记录</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+{{if .Data}}
+<form method="GET" action="/executions" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+  <select name="project" onchange="this.form.submit()" style="padding:6px;border:1px solid #ddd;border-radius:4px;">
+    <option value="">全部项目</option>
+    {{range .Data.Projects}}
+    <option value="{{.ID}}" {{if eq .ID $.Data.FilterProjectID}}selected{{end}}>{{.Name}}</option>
+    {{end}}
+  </select>
+  <select name="env" onchange="this.form.submit()" style="padding:6px;border:1px solid #ddd;border-radius:4px;">
+    <option value="">全部环境</option>
+    {{range .Data.Environments}}
+    <option value="{{.ID}}" {{if eq .ID $.Data.FilterEnvID}}selected{{end}}>{{.Name}}</option>
+    {{end}}
+  </select>
+  <select name="status" onchange="this.form.submit()" style="padding:6px;border:1px solid #ddd;border-radius:4px;">
+    <option value="">全部状态</option>
+    <option value="pending" {{if eq .Data.FilterStatus "pending"}}selected{{end}}>待执行</option>
+    <option value="success" {{if eq .Data.FilterStatus "success"}}selected{{end}}>成功</option>
+    <option value="failed" {{if eq .Data.FilterStatus "failed"}}selected{{end}}>失败</option>
+  </select>
+</form>
+{{if .Data.Records}}
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>项目</th>
+      <th>脚本</th>
+      <th>数据源</th>
+      <th>环境</th>
+      <th>状态</th>
+      <th>标记方式</th>
+      <th>执行人</th>
+      <th>执行时间</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .Data.Records}}
+    <tr>
+      <td>{{.ID}}</td>
+      <td>{{.ProjectName}}</td>
+      <td>{{.ScriptTitle}}</td>
+      <td>{{.DatasourceName}}</td>
+      <td>{{.EnvironmentName}}</td>
+      <td>
+        {{if eq .Status "success"}}
+        <span class="badge badge-success" title="执行成功">成功</span>
+        {{else if eq .Status "failed"}}
+        <span class="badge badge-failed" title="失败原因：{{if .Error}}{{.Error}}{{else}}未知错误{{end}}" style="cursor:help;">失败</span>
+        {{else if eq .Status "pending"}}
+        <span class="badge badge-pending" title="等待执行">待执行</span>
+        {{else if eq .Status "manual_marked"}}
+        <span class="badge badge-manual_marked" title="手动标记完成">手动标记</span>
+        {{else}}
+        <span class="badge">{{.Status}}</span>
+        {{end}}
+      </td>
+      <td>{{if eq .MarkMethod "manual"}}手动{{else}}自动{{end}}</td>
+      <td>{{.ExecutedBy}}</td>
+      <td>{{if .ExecutedAt}}{{.ExecutedAt}}{{else}}—{{end}}</td>
+      <td>
+        <a href="/executions/{{.ID}}" class="btn btn-sm">详情</a>
+        {{if or (eq .Status "pending") (eq .Status "failed")}}
+        <button type="button" class="btn btn-sm btn-success" onclick="markSuccess({{.ID}})">标记成功</button>
+        {{end}}
+        <button type="button" class="btn btn-sm btn-danger" onclick="deleteExecution({{.ID}})">删除</button>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<div class="card" style="text-align:center;">
+  <p style="color:#666;margin-bottom:12px;">暂无执行记录</p>
+  <p style="color:#999;font-size:13px;">💡 前往「发布编排」选择脚本，然后推送到目标环境执行</p>
+  <a href="/releases" class="btn" style="margin-top:12px;">去发布编排</a>
+</div>
+{{end}}
+
+<script>
+function markSuccess(id) {
+  if (!confirm('确认将该执行记录标记为成功？')) {
+    return;
+  }
+  var formData = new FormData();
+  formData.append('status', 'success');
+
+  fetch('/executions/ajax/' + id + '/mark', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + data.message);
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+  });
+}
+
+function deleteExecution(id) {
+  if (!confirm('确认删除该执行记录？此操作不可撤销。')) {
+    return;
+  }
+  var formData = new FormData();
+
+  fetch('/executions/ajax/' + id + '/delete', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + data.message);
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+  });
+}
+</script>
+{{end}}
+{{end}}

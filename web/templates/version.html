@@ -1,0 +1,67 @@
+{{define "content"}}
+<div class="page-title">版本管理</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+
+<form method="GET" action="/versions" style="margin-bottom:16px;">
+  <label style="font-size:13px;color:#555;margin-right:8px;">选择项目:</label>
+  <select name="project" onchange="this.form.submit()" style="padding:6px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+    <option value="">-- 选择项目 --</option>
+    {{range .Data.Projects}}
+    <option value="{{.ID}}" {{if eq .ID $.Data.ProjectID}}selected{{end}}>{{.Name}} ({{.Code}})</option>
+    {{end}}
+  </select>
+</form>
+
+{{if .Data.ProjectID}}
+<table>
+  <thead>
+    <tr><th>ID</th><th>版本号</th><th>当前</th><th>来源</th><th>创建时间</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+  {{range .Data.Versions}}
+    <tr>
+      <td>{{.ID}}</td>
+      <td style="font-weight:600;">{{.Version}}</td>
+      <td>{{if .IsCurrent}}<span class="badge badge-success">当前版本</span>{{else}}—{{end}}</td>
+      <td>
+        {{if eq .Source "manual_init"}}
+        <span class="badge badge-draft">手动创建</span>
+        {{else if eq .Source "auto_inc"}}
+        <span class="badge badge-published">归档自增</span>
+        {{else}}
+        <span class="badge">{{.Source}}</span>
+        {{end}}
+      </td>
+      <td>{{.CreatedAt}}</td>
+      <td>
+        {{if not .IsCurrent}}
+        <form method="POST" action="/versions/{{.ID}}/set-current" class="inline">
+          <input type="hidden" name="project_id" value="{{$.Data.ProjectID}}">
+          <button type="submit" class="btn btn-sm">设为当前</button>
+        </form>
+        {{end}}
+      </td>
+    </tr>
+  {{else}}
+    <tr><td colspan="6" style="text-align:center;color:#999;">暂无版本</td></tr>
+  {{end}}
+  </tbody>
+</table>
+
+<h3 style="margin-top:24px;margin-bottom:12px;font-size:16px;">新建版本</h3>
+<form method="POST" action="/versions" style="max-width:480px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <input type="hidden" name="project_id" value="{{.Data.ProjectID}}">
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">版本号 *</label>
+    <input type="text" name="version" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">设为当前版本</label>
+    <input type="checkbox" name="is_current" value="on">
+  </p>
+  <button type="submit" class="btn">创建</button>
+</form>
+{{else}}
+<p style="color:#999;">请选择一个项目查看版本。</p>
+{{end}}
+{{end}}

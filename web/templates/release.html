@@ -1,0 +1,95 @@
+{{define "content"}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/projects" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">项目配置</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/datasources" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">数据源</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/scripts" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">脚本录入</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">4</div>
+    <span class="step-label">发布编排</span>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/executions" class="step-link">
+      <div class="step-num">5</div>
+      <span class="step-label">推送执行</span>
+    </a>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/archives" class="step-link">
+      <div class="step-num">6</div>
+      <span class="step-label">归档提交</span>
+    </a>
+  </div>
+</div>
+
+<div class="page-title">发布列表 <a href="/releases/new" class="btn">创建发布</a></div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+{{if .Data}}
+{{if .Data.Releases}}
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>标题</th>
+      <th>项目</th>
+      <th>版本</th>
+      <th>状态</th>
+      <th>创建人</th>
+      <th>创建时间</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .Data.Releases}}
+    <tr>
+      <td>{{.ID}}</td>
+      <td>{{.Title}}</td>
+      <td>{{.ProjectName}}</td>
+      <td>{{if .VersionStr}}{{.VersionStr}}{{else}}—{{end}}</td>
+      <td>
+        {{if eq .Status "draft"}}
+        <span class="badge badge-draft">草稿</span>
+        {{else if eq .Status "published"}}
+        <span class="badge badge-published">已发布</span>
+        {{else if eq .Status "executing"}}
+        <span class="badge badge-executing">执行中</span>
+        {{else if eq .Status "archived"}}
+        <span class="badge badge-archived">已归档</span>
+        {{else}}
+        <span class="badge">{{.Status}}</span>
+        {{end}}
+      </td>
+      <td>{{.CreatedBy}}</td>
+      <td>{{.CreatedAt}}</td>
+      <td><a href="/releases/{{.ID}}" class="btn btn-sm">详情</a></td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<div class="card" style="text-align:center;">
+  <p style="color:#666;margin-bottom:12px;">暂无发布，先创建一个发布吧 👇</p>
+  <p style="color:#999;font-size:13px;">流程提示：创建发布 → 添加脚本 → 推送执行 → 归档提交</p>
+</div>
+{{end}}
+{{end}}
+{{end}}

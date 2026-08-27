@@ -1,0 +1,118 @@
+{{define "content"}}
+<div class="page-title">{{if .Data.IsEdit}}编辑数据源{{else}}新建数据源{{end}}</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+<form id="datasource-form" style="max-width:560px;background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">所属项目 *</label>
+    <select name="project_id" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+      <option value="">-- 选择项目 --</option>
+      {{range .Data.Projects}}
+      <option value="{{.ID}}" {{if $.Data.Datasource}}{{if eq .ID $.Data.Datasource.ProjectID}}selected{{end}}{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">所属环境 *</label>
+    <select name="environment_id" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+      <option value="">-- 选择环境 --</option>
+      {{range .Data.Environments}}
+      <option value="{{.ID}}" {{if $.Data.Datasource}}{{if eq .ID $.Data.Datasource.EnvironmentID}}selected{{end}}{{end}}>{{.Name}}</option>
+      {{end}}
+    </select>
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">数据源名称 *</label>
+    <input type="text" name="name" value="{{if .Data.Datasource}}{{.Data.Datasource.Name}}{{end}}" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">数据库类型</label>
+    <select name="db_type" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+      <option value="mysql" {{if $.Data.Datasource}}{{if eq $.Data.Datasource.DBType "mysql"}}selected{{end}}{{else}}selected{{end}}>MySQL</option>
+      <option value="postgresql" {{if $.Data.Datasource}}{{if eq $.Data.Datasource.DBType "postgresql"}}selected{{end}}{{end}}>PostgreSQL</option>
+      <option value="sqlite" {{if $.Data.Datasource}}{{if eq $.Data.Datasource.DBType "sqlite"}}selected{{end}}{{end}}>SQLite</option>
+      <option value="oracle" {{if $.Data.Datasource}}{{if eq $.Data.Datasource.DBType "oracle"}}selected{{end}}{{end}}>Oracle</option>
+      <option value="sqlserver" {{if $.Data.Datasource}}{{if eq $.Data.Datasource.DBType "sqlserver"}}selected{{end}}{{end}}>SQL Server</option>
+    </select>
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">主机 *</label>
+    <input type="text" name="host" value="{{if .Data.Datasource}}{{.Data.Datasource.Host}}{{end}}" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">端口 *</label>
+    <input type="number" name="port" value="{{if .Data.Datasource}}{{.Data.Datasource.Port}}{{else}}3306{{end}}" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">数据库名</label>
+    <input type="text" name="db_name" value="{{if .Data.Datasource}}{{.Data.Datasource.DBName}}{{end}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">用户名</label>
+    <input type="text" name="username" value="{{if .Data.Datasource}}{{.Data.Datasource.Username}}{{end}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">密码 {{if .Data.IsEdit}}(留空不修改){{else}}(明文存储前加密){{end}}</label>
+    <div class="pwd-wrap">
+      <input type="password" id="pwdInput" name="password" {{if not .Data.IsEdit}}required{{end}} placeholder="{{if .Data.IsEdit}}留空不修改{{else}}输入密码{{end}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">
+      <button type="button" class="pwd-toggle" onclick="togglePwd()">显示</button>
+    </div>
+  </p>
+  <p style="margin-bottom:12px;">
+    <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">启用</label>
+    <input type="checkbox" name="enabled" value="on" {{if .Data.Datasource}}{{if .Data.Datasource.Enabled}}checked{{end}}{{else}}checked{{end}}>
+  </p>
+  <button type="button" class="btn" onclick="submitForm()">{{if .Data.IsEdit}}保存{{else}}创建{{end}}</button>
+  <a href="/datasources" class="btn" style="background:#666;">取消</a>
+</form>
+
+<script>
+var isEdit = {{if .Data.IsEdit}}true{{else}}false{{end}};
+var editId = {{if .Data.Datasource}}{{.Data.Datasource.ID}}{{else}}0{{end}};
+
+function togglePwd() {
+  var input = document.getElementById('pwdInput');
+  var btn = input.nextElementSibling;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '隐藏';
+  } else {
+    input.type = 'password';
+    btn.textContent = '显示';
+  }
+}
+
+function submitForm() {
+  var form = document.getElementById('datasource-form');
+  var btn = form.querySelector('button[type="button"]');
+  var originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  var formData = new FormData(form);
+  var url = isEdit ? ('/datasources/ajax/' + editId + '/edit') : '/datasources/ajax/new';
+
+  fetch(url, {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(data) {
+    if (data.success) {
+      alert('\u2705 ' + data.message);
+      window.location.href = data.redirect;
+    } else {
+      alert('\u274c ' + data.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  })
+  .catch(function(error) {
+    alert('\u274c 请求失败：' + error.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+}
+</script>
+{{end}}

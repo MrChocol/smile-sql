@@ -1,0 +1,185 @@
+{{define "content"}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/projects" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">项目配置</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/datasources" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">数据源</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">3</div>
+    <span class="step-label">脚本录入</span>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/releases" class="step-link">
+      <div class="step-num">4</div>
+      <span class="step-label">发布编排</span>
+    </a>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/executions" class="step-link">
+      <div class="step-num">5</div>
+      <span class="step-label">推送执行</span>
+    </a>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/archives" class="step-link">
+      <div class="step-num">6</div>
+      <span class="step-label">归档提交</span>
+    </a>
+  </div>
+</div>
+
+<div class="page-title">脚本列表 <a href="/scripts/new" class="btn">录入脚本</a></div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+{{if .Data}}
+<form method="GET" action="/scripts" style="margin-bottom:16px;">
+  <select name="project" onchange="this.form.submit()" style="padding:6px;border:1px solid #ddd;border-radius:4px;">
+    <option value="">全部项目</option>
+    {{range .Data.Projects}}
+    <option value="{{.ID}}" {{if eq .ID $.Data.FilterProjectID}}selected{{end}}>{{.Name}}</option>
+    {{end}}
+  </select>
+</form>
+{{if .Data.Scripts}}
+<table>
+  <thead>
+    <tr>
+      <th style="width:30px;"><input type="checkbox" id="checkAll" onclick="toggleAll(this)"></th>
+      <th>ID</th>
+      <th>标题</th>
+      <th>项目</th>
+      <th>类型</th>
+      <th>状态</th>
+      <th>创建人</th>
+      <th>创建时间</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .Data.Scripts}}
+    <tr>
+      <td><input type="checkbox" class="row-check" value="{{.ID}}"></td>
+      <td>{{.ID}}</td>
+      <td>{{.Title}}</td>
+      <td>{{index $.Data.ProjectNames .ProjectID}}</td>
+      <td>{{.SqlType}}</td>
+      <td>
+        {{if eq .Status "draft"}}
+        <span class="badge badge-draft">草稿</span>
+        {{else if eq .Status "executed"}}
+        <span class="badge badge-executed">已执行</span>
+        {{else if eq .Status "archived"}}
+        <span class="badge badge-archived">已归档</span>
+        {{else}}
+        <span class="badge">{{.Status}}</span>
+        {{end}}
+      </td>
+      <td>{{.CreatedBy}}</td>
+      <td>{{.CreatedAt}}</td>
+      <td>
+        <a href="/scripts/{{.ID}}/export" class="btn btn-sm">导出</a>
+        {{if eq .Status "draft"}}
+        <a href="/scripts/{{.ID}}/edit" class="btn btn-sm">编辑</a>
+        <button type="button" class="btn btn-sm btn-danger" onclick="deleteScript({{.ID}}, '{{.Title}}')">删除</button>
+        {{end}}
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+<div style="margin-top:12px;">
+  <button type="button" class="btn" onclick="batchExport()">批量导出</button>
+  <span id="selectedCount" style="margin-left:8px;color:#666;font-size:13px;">已选 0 项</span>
+</div>
+<form id="batchExportForm" method="POST" action="/scripts/export-batch" style="display:none;">
+  <input type="hidden" name="ids" id="batchExportIds">
+</form>
+{{else}}
+<div class="card" style="text-align:center;">
+  <p style="color:#666;margin-bottom:12px;">暂无脚本，先从「录入脚本」开始吧 👇</p>
+  <p style="color:#999;font-size:13px;">流程提示：脚本录入 → 加入发布 → 推送执行 → 归档提交</p>
+</div>
+{{end}}
+
+<script>
+function deleteScript(id, title) {
+  if (!confirm('确认删除脚本「' + title + '」？此操作不可撤销。')) {
+    return;
+  }
+  var formData = new FormData();
+  fetch('/scripts/ajax/' + id + '/delete', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + data.message);
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+  });
+}
+
+function toggleAll(checkAll) {
+  var checkboxes = document.querySelectorAll('.row-check');
+  for (var i = 0; i < checkboxes.length; i++) {
+    checkboxes[i].checked = checkAll.checked;
+  }
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  var checkboxes = document.querySelectorAll('.row-check');
+  var count = 0;
+  for (var i = 0; i < checkboxes.length; i++) {
+    if (checkboxes[i].checked) count++;
+  }
+  document.getElementById('selectedCount').textContent = '已选 ' + count + ' 项';
+
+  // Sync checkAll state
+  var checkAll = document.getElementById('checkAll');
+  if (checkAll) {
+    checkAll.checked = checkboxes.length > 0 && count === checkboxes.length;
+  }
+}
+
+// Listen for individual checkbox changes
+document.addEventListener('change', function(e) {
+  if (e.target.classList && e.target.classList.contains('row-check')) {
+    updateSelectedCount();
+  }
+});
+
+function batchExport() {
+  var checkboxes = document.querySelectorAll('.row-check:checked');
+  if (checkboxes.length === 0) {
+    alert('请先选择要导出的脚本');
+    return;
+  }
+  var ids = [];
+  for (var i = 0; i < checkboxes.length; i++) {
+    ids.push(checkboxes[i].value);
+  }
+  document.getElementById('batchExportIds').value = ids.join(',');
+  document.getElementById('batchExportForm').submit();
+}
+</script>
+{{end}}
+{{end}}

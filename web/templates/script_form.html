@@ -1,0 +1,78 @@
+{{define "content"}}
+<div class="page-title">{{if .Data.IsEdit}}编辑脚本{{else}}录入脚本{{end}}</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+{{if .Data}}
+{{if .Data.Projects}}
+<form id="script-form" style="max-width:640px;background:#fff;padding:24px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">项目 *</label>
+  <select name="project_id" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">
+    <option value="">请选择项目</option>
+    {{range .Data.Projects}}
+    <option value="{{.ID}}" {{if and $.Data.Script (eq .ID $.Data.Script.ProjectID)}}selected{{end}}>{{.Name}}（{{.Code}}）</option>
+    {{end}}
+  </select>
+
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">标题 *</label>
+  <input type="text" name="title" required value="{{if .Data.Script}}{{.Data.Script.Title}}{{end}}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">
+
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">描述 *</label>
+  <textarea name="description" rows="2" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">{{if .Data.Script}}{{.Data.Script.Description}}{{end}}</textarea>
+
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">SQL 内容</label>
+  <textarea name="content" rows="8" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;font-family:monospace;">{{if .Data.Script}}{{.Data.Script.Content}}{{end}}</textarea>
+
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">SQL 类型</label>
+  <select name="sql_type" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">
+    <option value="DDL" {{if or (not .Data.Script) (eq .Data.Script.SqlType "DDL")}}selected{{end}}>DDL</option>
+    <option value="DML" {{if and .Data.Script (eq .Data.Script.SqlType "DML")}}selected{{end}}>DML</option>
+  </select>
+
+  {{if not .Data.IsEdit}}
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">创建人</label>
+  <input type="text" name="created_by" value="{{if .User}}{{.User.Username}}{{end}}" placeholder="留空则使用当前登录用户" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:16px;">
+  {{end}}
+
+  <button type="button" class="btn" id="submit-btn" onclick="submitScriptForm()">{{if .Data.IsEdit}}保存修改{{else}}创建脚本{{end}}</button>
+  <a href="/scripts" class="btn" style="background:#666;margin-left:8px;">取消</a>
+</form>
+
+<script>
+function submitScriptForm() {
+  var form = document.getElementById('script-form');
+  var btn = document.getElementById('submit-btn');
+  var formData = new FormData(form);
+  var actionUrl = {{if .Data.IsEdit}}"/scripts/ajax/{{.Data.Script.ID}}/edit"{{else}}"/scripts/ajax/new"{{end}};
+
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  fetch(actionUrl, {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
+    } else {
+      alert('❌ ' + data.message);
+      btn.disabled = false;
+      btn.textContent = {{if .Data.IsEdit}}'保存修改'{{else}}'创建脚本'{{end}};
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = {{if .Data.IsEdit}}'保存修改'{{else}}'创建脚本'{{end}};
+  });
+}
+</script>
+{{else}}
+<p style="color:#c33;">暂无项目，请先创建项目后再录入脚本。</p>
+<a href="/projects" class="btn">去创建项目</a>
+{{end}}
+{{end}}
+{{end}}

@@ -1,0 +1,377 @@
+{{define "content"}}
+{{if .Data}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/projects" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">项目配置</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/datasources" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">数据源</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/scripts" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">脚本录入</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">4</div>
+    <span class="step-label">发布编排</span>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/executions" class="step-link">
+      <div class="step-num">5</div>
+      <span class="step-label">推送执行</span>
+    </a>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/archives" class="step-link">
+      <div class="step-num">6</div>
+      <span class="step-label">归档提交</span>
+    </a>
+  </div>
+</div>
+
+<div class="page-title">
+  发布详情 #{{.Data.Release.ID}}
+  <a href="/releases" class="btn" style="background:#666;">返回列表</a>
+</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+
+<div class="card">
+  <p style="margin-bottom:8px;"><strong>标题：</strong>{{.Data.Release.Title}}</p>
+  <p style="margin-bottom:8px;"><strong>项目：</strong>{{.Data.Release.ProjectName}}</p>
+  <p style="margin-bottom:8px;"><strong>版本：</strong>{{if .Data.Release.VersionStr}}{{.Data.Release.VersionStr}}{{else}}—{{end}}</p>
+  <p style="margin-bottom:8px;"><strong>状态：</strong>
+    {{if eq .Data.Release.Status "draft"}}
+    <span class="badge badge-draft">草稿</span>
+    {{else if eq .Data.Release.Status "published"}}
+    <span class="badge badge-published">已发布</span>
+    {{else if eq .Data.Release.Status "executing"}}
+    <span class="badge badge-executing">执行中</span>
+    {{else if eq .Data.Release.Status "archived"}}
+    <span class="badge badge-archived">已归档</span>
+    {{else}}
+    <span class="badge">{{.Data.Release.Status}}</span>
+    {{end}}
+  </p>
+  <p style="margin-bottom:8px;"><strong>创建人：</strong>{{.Data.Release.CreatedBy}}</p>
+  <p><strong>创建时间：</strong>{{.Data.Release.CreatedAt}}</p>
+</div>
+
+<h3 style="font-size:16px;margin-bottom:12px;">📌 下一步：推送执行</h3>
+<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+  <p style="margin-bottom:12px;color:#166534;font-size:14px;">添加完脚本后，在下方列表中选择需要执行的脚本，然后选择目标数据源，点击「推送执行」即可将选中的脚本推送到目标环境执行。</p>
+  {{if .Data.Datasources}}
+  <form id="push-form" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input type="hidden" name="release_id" value="{{.Data.Release.ID}}">
+    <input type="hidden" name="script_ids" id="script-ids-input" value="">
+    <select name="datasource_id" required style="padding:8px;border:1px solid #ddd;border-radius:4px;min-width:280px;">
+      <option value="">选择目标数据源</option>
+      {{range .Data.Datasources}}
+      <option value="{{.ID}}">{{.EnvironmentName}} — {{.Name}}</option>
+      {{end}}
+    </select>
+    <span id="push-selection-count" style="font-size:14px;color:#555;">已选择 0 个脚本</span>
+    <button type="button" class="btn btn-success" id="push-btn" onclick="submitPushForm()" disabled>🚀 推送执行</button>
+    <a href="/executions?release={{.Data.Release.ID}}" class="btn btn-sm">查看执行记录</a>
+  </form>
+  {{else}}
+  <p style="color:#b45309;font-size:14px;">⚠️ 该项目下暂无可用数据源，请先去<a href="/datasources">配置数据源</a>。</p>
+  {{end}}
+</div>
+
+<h3 style="font-size:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+  已关联脚本
+  {{if .Data.Scripts}}
+  <button type="button" class="btn btn-sm btn-danger" onclick="clearAllScripts({{.Data.Release.ID}})">全部移除</button>
+  {{end}}
+</h3>
+{{if .Data.Scripts}}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;">
+      <input type="checkbox" id="check-all" onchange="toggleAllScripts()" checked>
+      <strong>全选</strong>
+    </label>
+    <span id="selection-count" style="font-size:13px;color:#666;">已选 0 个 / 共 {{len .Data.Scripts}} 个</span>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button type="button" class="btn btn-sm" onclick="selectAllScripts()">全选</button>
+    <button type="button" class="btn btn-sm" onclick="invertSelection()">反选</button>
+  </div>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px;text-align:center;">选择</th>
+      <th>ID</th>
+      <th>标题</th>
+      <th>类型</th>
+      <th>状态</th>
+      <th>创建人</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{range .Data.Scripts}}
+    <tr>
+      <td style="text-align:center;">
+        <input type="checkbox" class="script-check" value="{{.ID}}" onchange="updateScriptSelectionCount()" checked>
+      </td>
+      <td>{{.ID}}</td>
+      <td>{{.Title}}</td>
+      <td>{{.SqlType}}</td>
+      <td>
+        {{if eq .Status "draft"}}
+        <span class="badge badge-draft">草稿</span>
+        {{else if eq .Status "executed"}}
+        <span class="badge badge-executed">已执行</span>
+        {{else if eq .Status "archived"}}
+        <span class="badge badge-archived">已归档</span>
+        {{else}}
+        <span class="badge">{{.Status}}</span>
+        {{end}}
+      </td>
+      <td>{{.CreatedBy}}</td>
+      <td>
+        <button type="button" class="btn btn-sm btn-danger" onclick="removeScript({{$.Data.Release.ID}}, {{.ID}}, '{{.Title}}')">移除</button>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p style="color:#999;margin-bottom:24px;">暂无关联脚本。请从下方添加脚本。</p>
+{{end}}
+
+<h3 style="font-size:16px;margin:24px 0 12px;">添加脚本</h3>
+{{if .Data.Available}}
+<form id="add-script-form" style="background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <select name="script_id" required style="padding:8px;border:1px solid #ddd;border-radius:4px;min-width:300px;">
+    <option value="">请选择脚本</option>
+    {{range .Data.Available}}
+    <option value="{{.ID}}">{{.Title}}（{{.SqlType}}）</option>
+    {{end}}
+  </select>
+  <button type="button" class="btn" id="add-btn" onclick="submitAddScript({{.Data.Release.ID}})">添加</button>
+</form>
+{{else}}
+<p style="color:#999;">该项目下没有可添加的脚本（所有脚本已关联或暂无脚本）。</p>
+{{end}}
+
+<script>
+var releaseId = {{.Data.Release.ID}};
+
+// ---------------------------------------------------------------------------
+// Script selection management
+// ---------------------------------------------------------------------------
+
+function getSelectedScriptIds() {
+  var checkboxes = document.querySelectorAll('.script-check:checked');
+  var ids = [];
+  for (var i = 0; i < checkboxes.length; i++) {
+    ids.push(checkboxes[i].value);
+  }
+  return ids;
+}
+
+function updateScriptSelectionCount() {
+  var checkboxes = document.querySelectorAll('.script-check');
+  var checked = document.querySelectorAll('.script-check:checked');
+  var countEl = document.getElementById('selection-count');
+  var pushCountEl = document.getElementById('push-selection-count');
+  var pushBtn = document.getElementById('push-btn');
+  var checkAll = document.getElementById('check-all');
+
+  var total = checkboxes.length;
+  var selected = checked.length;
+
+  if (countEl) {
+    countEl.textContent = '已选 ' + selected + ' 个 / 共 ' + total + ' 个';
+  }
+  if (pushCountEl) {
+    pushCountEl.textContent = '已选择 ' + selected + ' 个脚本';
+  }
+  if (pushBtn) {
+    if (selected === 0) {
+      pushBtn.disabled = true;
+      pushBtn.title = '请至少选择一个脚本';
+    } else {
+      pushBtn.disabled = false;
+      pushBtn.title = '';
+    }
+  }
+  if (checkAll) {
+    checkAll.checked = selected === total && total > 0;
+  }
+}
+
+function toggleAllScripts() {
+  var checkAll = document.getElementById('check-all');
+  var checkboxes = document.querySelectorAll('.script-check');
+  for (var i = 0; i < checkboxes.length; i++) {
+    checkboxes[i].checked = checkAll.checked;
+  }
+  updateScriptSelectionCount();
+}
+
+function selectAllScripts() {
+  var checkboxes = document.querySelectorAll('.script-check');
+  for (var i = 0; i < checkboxes.length; i++) {
+    checkboxes[i].checked = true;
+  }
+  updateScriptSelectionCount();
+}
+
+function invertSelection() {
+  var checkboxes = document.querySelectorAll('.script-check');
+  for (var i = 0; i < checkboxes.length; i++) {
+    checkboxes[i].checked = !checkboxes[i].checked;
+  }
+  updateScriptSelectionCount();
+}
+
+// Initialize selection count on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateScriptSelectionCount();
+});
+
+// ---------------------------------------------------------------------------
+// Push execution
+// ---------------------------------------------------------------------------
+
+function submitPushForm() {
+  var form = document.getElementById('push-form');
+  var btn = document.getElementById('push-btn');
+
+  // Collect selected script IDs
+  var selectedIds = getSelectedScriptIds();
+  if (selectedIds.length === 0) {
+    alert('请至少选择一个脚本');
+    return;
+  }
+
+  // Fill hidden field with comma-separated IDs
+  document.getElementById('script-ids-input').value = selectedIds.join(',');
+
+  var formData = new FormData(form);
+
+  btn.disabled = true;
+  btn.textContent = '执行中...';
+
+  fetch('/executions/ajax/push', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
+    } else {
+      alert('❌ ' + data.message);
+      btn.disabled = false;
+      btn.textContent = '🚀 推送执行';
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '🚀 推送执行';
+  });
+}
+
+function submitAddScript(releaseId) {
+  var form = document.getElementById('add-script-form');
+  var btn = document.getElementById('add-btn');
+  var formData = new FormData(form);
+
+  btn.disabled = true;
+  btn.textContent = '添加中...';
+
+  fetch('/releases/ajax/' + releaseId + '/add-script', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + data.message);
+      btn.disabled = false;
+      btn.textContent = '添加';
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '添加';
+  });
+}
+
+function removeScript(releaseId, scriptId, scriptTitle) {
+  if (!confirm('确认移除脚本「' + scriptTitle + '」？')) {
+    return;
+  }
+  var formData = new FormData();
+  formData.append('script_id', scriptId);
+
+  fetch('/releases/ajax/' + releaseId + '/remove-script', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + data.message);
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+  });
+}
+
+function clearAllScripts(releaseId) {
+  if (!confirm('确认移除所有已关联的脚本？此操作不可撤销。')) {
+    return;
+  }
+  var formData = new FormData();
+
+  fetch('/releases/ajax/' + releaseId + '/clear-scripts', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ ' + data.message);
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+  });
+}
+</script>
+{{end}}
+{{end}}

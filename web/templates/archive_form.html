@@ -1,0 +1,156 @@
+{{define "content"}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/projects" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">项目配置</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/datasources" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">数据源</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/scripts" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">脚本录入</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/releases" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">发布编排</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/executions" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">推送执行</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">6</div>
+    <span class="step-label">归档提交</span>
+  </div>
+</div>
+
+<div class="page-title">新建归档 <a href="/archives" class="btn" style="background:#666;">取消</a></div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+{{if .Data}}
+{{if .Data.Releases}}
+<form id="archive-form" style="max-width:640px;">
+  <div class="card">
+    <h3>选择发布</h3>
+    <p style="color:#666;font-size:13px;margin-bottom:12px;">选择要归档的发布（仅显示已发布或执行中的发布）</p>
+    <select name="release_id" id="release-select" required onchange="updateCommitMsg()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">
+      <option value="">请选择发布</option>
+      {{range .Data.Releases}}
+      <option value="{{.ReleaseID}}" data-title="{{.ReleaseTitle}}">{{.ReleaseTitle}}（{{.ProjectName}}）{{if .CurrentVersion}} v{{.CurrentVersion}}{{end}}</option>
+      {{end}}
+    </select>
+  </div>
+
+  <div class="card">
+    <h3>版本与提交信息</h3>
+    <p style="margin-bottom:12px;">
+      <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">Commit Message</label>
+      <textarea name="commit_message" id="commit-message" rows="3" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-family:inherit;"></textarea>
+    </p>
+    <p style="margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+        <input type="checkbox" name="version_bump" value="on" checked>
+        <span>版本号自增（patch +1）</span>
+      </label>
+      <span style="color:#999;font-size:12px;margin-left:28px;">勾选后自动将版本号的 patch 位 +1</span>
+    </p>
+  </div>
+
+  <div style="display:flex;gap:8px;">
+    <button type="button" id="archive-btn" class="btn btn-success" onclick="submitArchive()">📦 执行归档</button>
+    <a href="/archives" class="btn" style="background:#666;">取消</a>
+  </div>
+</form>
+
+<script>
+function updateCommitMsg() {
+  var sel = document.getElementById('release-select');
+  var opt = sel.options[sel.selectedIndex];
+  var title = opt ? opt.dataset.title : '';
+  if (title) {
+    document.getElementById('commit-message').value = 'chore: archive SQL scripts for ' + title;
+  }
+}
+
+function submitArchive() {
+  var btn = document.getElementById('archive-btn');
+  var releaseSel = document.getElementById('release-select');
+  var commitMsg = document.getElementById('commit-message');
+  var versionBump = document.querySelector('input[name="version_bump"]');
+
+  var releaseID = releaseSel.value;
+  if (!releaseID) {
+    alert('请选择要归档的发布');
+    return;
+  }
+
+  // Disable button and show loading state
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  btn.style.cursor = 'not-allowed';
+  btn.textContent = '归档中...';
+
+  var formData = new FormData();
+  formData.append('release_id', releaseID);
+  formData.append('commit_message', commitMsg.value);
+  if (versionBump.checked) {
+    formData.append('version_bump', 'on');
+  }
+
+  fetch('/archives/ajax', {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(response) {
+    return response.json();
+  })
+  .then(function(result) {
+    if (result.success) {
+      var data = result.data;
+      var msg = '归档成功！\n\n' +
+                'Commit: ' + data.git_commit_hash + '\n' +
+                '版本: v' + data.version_from + ' → v' + data.version_to + '\n' +
+                '归档时间: ' + data.archived_at;
+      if (confirm(msg + '\n\n点击确定查看归档详情')) {
+        window.location.href = '/archives/' + data.id;
+      }
+    } else {
+      alert('归档失败\n\n' + result.message);
+    }
+  })
+  .catch(function(error) {
+    alert('请求失败: ' + error.message);
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.textContent = '📦 执行归档';
+  });
+}
+</script>
+{{else}}
+<div class="card" style="text-align:center;">
+  <p style="color:#c33;margin-bottom:12px;">⚠️ 没有可归档的发布</p>
+  <p style="color:#999;font-size:13px;margin-bottom:12px;">需要先创建发布并推送执行后才能归档</p>
+  <a href="/releases" class="btn">去管理发布</a>
+</div>
+{{end}}
+{{end}}
+{{end}}

@@ -1,0 +1,85 @@
+{{define "content"}}
+<div class="page-title">创建发布</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+{{if .Data}}
+{{if .Data.Projects}}
+<form id="release-form" style="max-width:640px;background:#fff;padding:24px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">项目 *</label>
+  <select name="project_id" id="project-select" required onchange="filterVersions()" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">
+    <option value="">请选择项目</option>
+    {{range .Data.Projects}}
+    <option value="{{.ID}}">{{.Name}}（{{.Code}}）</option>
+    {{end}}
+  </select>
+
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">版本（可选）</label>
+  <select name="version_id" id="version-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">
+    <option value="">-- 不关联版本 --</option>
+    {{range .Data.Versions}}
+    <option value="{{.ID}}" data-project="{{.ProjectID}}">{{.ProjectName}} / {{.Version}}{{if .IsCurrent}} (当前){{end}}</option>
+    {{end}}
+  </select>
+
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">标题 *</label>
+  <input type="text" name="title" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:12px;">
+
+  <label style="display:block;font-size:13px;color:#555;margin-bottom:4px;">创建人</label>
+  <input type="text" name="created_by" value="{{if .User}}{{.User.Username}}{{end}}" placeholder="留空则使用当前登录用户" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;margin-bottom:16px;">
+
+  <button type="button" class="btn" id="submit-btn" onclick="submitReleaseForm()">创建发布</button>
+  <a href="/releases" class="btn" style="background:#666;margin-left:8px;">取消</a>
+</form>
+
+<script>
+function filterVersions() {
+  var pid = document.getElementById('project-select').value;
+  var opts = document.getElementById('version-select').getElementsByTagName('option');
+  for (var i = 0; i < opts.length; i++) {
+    var opt = opts[i];
+    if (opt.value === '' || opt.dataset.project === pid) {
+      opt.style.display = '';
+    } else {
+      opt.style.display = 'none';
+    }
+  }
+  document.getElementById('version-select').value = '';
+}
+
+function submitReleaseForm() {
+  var form = document.getElementById('release-form');
+  var btn = document.getElementById('submit-btn');
+  var formData = new FormData(form);
+
+  btn.disabled = true;
+  btn.textContent = '创建中...';
+
+  fetch('/releases/ajax/new', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
+    } else {
+      alert('❌ ' + data.message);
+      btn.disabled = false;
+      btn.textContent = '创建发布';
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '创建发布';
+  });
+}
+</script>
+{{else}}
+<p style="color:#c33;">暂无项目，请先创建项目后再创建发布。</p>
+<a href="/projects" class="btn">去创建项目</a>
+{{end}}
+{{end}}
+{{end}}

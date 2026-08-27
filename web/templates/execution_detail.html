@@ -1,0 +1,157 @@
+{{define "content"}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/projects" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">项目配置</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/datasources" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">数据源</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/scripts" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">脚本录入</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step done">
+    <a href="/releases" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">发布编排</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">5</div>
+    <span class="step-label">推送执行</span>
+  </div>
+  <div class="workflow-line"></div>
+  <div class="workflow-step">
+    <a href="/archives" class="step-link">
+      <div class="step-num">6</div>
+      <span class="step-label">归档提交</span>
+    </a>
+  </div>
+</div>
+
+{{if .Data}}
+<div class="page-title">
+  执行记录 #{{.Data.Record.ID}}
+  <a href="/executions" class="btn" style="background:#666;">返回列表</a>
+</div>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+
+<div class="card">
+  <h3>基本信息</h3>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+    <p><strong>ID：</strong>{{.Data.Record.ID}}</p>
+    <p><strong>发布ID：</strong>{{.Data.Record.ReleaseID}}</p>
+    <p><strong>项目：</strong>{{.Data.Record.ProjectName}}</p>
+    <p><strong>脚本：</strong>{{.Data.Record.ScriptTitle}}（ID: {{.Data.Record.ScriptID}}）</p>
+    <p><strong>数据源：</strong>{{.Data.Record.DatasourceName}}（ID: {{.Data.Record.DatasourceID}}）</p>
+    <p><strong>环境：</strong>{{.Data.Record.EnvironmentName}}</p>
+    <p><strong>状态：</strong>
+      {{if eq .Data.Record.Status "success"}}
+      <span class="badge badge-success">成功</span>
+      {{else if eq .Data.Record.Status "failed"}}
+      <span class="badge badge-failed">失败</span>
+      {{else if eq .Data.Record.Status "pending"}}
+      <span class="badge badge-pending">待执行</span>
+      {{else if eq .Data.Record.Status "manual_marked"}}
+      <span class="badge badge-manual_marked">手动标记</span>
+      {{else}}
+      <span class="badge">{{.Data.Record.Status}}</span>
+      {{end}}
+    </p>
+    <p><strong>标记方式：</strong>{{if eq .Data.Record.MarkMethod "manual"}}手动{{else}}自动{{end}}</p>
+    <p><strong>执行人：</strong>{{.Data.Record.ExecutedBy}}</p>
+    <p><strong>执行时间：</strong>{{if .Data.Record.ExecutedAt}}{{.Data.Record.ExecutedAt}}{{else}}—{{end}}</p>
+    <p><strong>标记人：</strong>{{if .Data.Record.MarkedBy}}{{.Data.Record.MarkedBy}}{{else}}—{{end}}</p>
+    <p><strong>标记时间：</strong>{{if .Data.Record.MarkedAt}}{{.Data.Record.MarkedAt}}{{else}}—{{end}}</p>
+  </div>
+  {{if .Data.Record.Result}}
+  <p style="margin-top:12px;"><strong>执行结果：</strong></p>
+  <pre style="background:#f8f9fa;padding:12px;border-radius:6px;overflow-x:auto;font-size:13px;color:#333;">{{.Data.Record.Result}}</pre>
+  {{end}}
+  {{if .Data.Record.Error}}
+  <p style="margin-top:12px;"><strong>错误信息：</strong></p>
+  <pre style="background:#fef2f2;padding:12px;border-radius:6px;overflow-x:auto;font-size:13px;color:#991b1b;">{{.Data.Record.Error}}</pre>
+  {{end}}
+</div>
+
+{{if or (eq .Data.Record.Status "pending") (eq .Data.Record.Status "failed")}}
+<div class="card" style="background:#fffbeb;border:1px solid #fde68a;">
+  <h3 style="color:#92400e;">📌 手动标记</h3>
+  <p style="color:#92400e;font-size:13px;margin-bottom:12px;">当网络不通或无法自动执行时，可手动标记执行结果</p>
+  <form id="mark-form" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+    <label style="font-size:14px;cursor:pointer;"><input type="radio" name="status" value="success" required style="margin-right:6px;"> 标记为成功</label>
+    <label style="font-size:14px;cursor:pointer;"><input type="radio" name="status" value="failed" style="margin-right:6px;"> 标记为失败</label>
+    <button type="button" class="btn" id="mark-btn" onclick="submitMarkForm({{.Data.Record.ID}})">确认标记</button>
+  </form>
+</div>
+{{end}}
+
+{{if eq .Data.Record.Status "success"}}
+<div class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;text-align:center;">
+  <p style="color:#166534;font-size:16px;font-weight:600;margin-bottom:8px;">✅ 执行成功</p>
+  <p style="color:#166534;font-size:13px;margin-bottom:12px;">该脚本已成功执行，下一步可以进行归档提交</p>
+  <a href="/archives/new" class="btn btn-success">去归档 →</a>
+</div>
+{{end}}
+
+<script>
+function submitMarkForm(id) {
+  var form = document.getElementById('mark-form');
+  var btn = document.getElementById('mark-btn');
+  var formData = new FormData(form);
+
+  // Check if a radio is selected
+  var statusSelected = false;
+  var radios = form.querySelectorAll('input[name="status"]');
+  for (var i = 0; i < radios.length; i++) {
+    if (radios[i].checked) {
+      statusSelected = true;
+      break;
+    }
+  }
+  if (!statusSelected) {
+    alert('请选择标记状态');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '标记中...';
+
+  fetch('/executions/ajax/' + id + '/mark', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(function(response) { return response.json(); })
+  .then(function(data) {
+    if (data.success) {
+      alert('✅ ' + data.message);
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
+    } else {
+      alert('❌ ' + data.message);
+      btn.disabled = false;
+      btn.textContent = '确认标记';
+    }
+  })
+  .catch(function(error) {
+    alert('❌ 网络错误: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '确认标记';
+  });
+}
+</script>
+{{end}}
+{{end}}

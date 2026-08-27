@@ -1,0 +1,195 @@
+{{define "content"}}
+<div class="workflow-stepper">
+  <div class="workflow-step done">
+    <a href="/dashboard" class="step-link">
+      <div class="step-num">✓</div>
+      <span class="step-label">工作台</span>
+    </a>
+  </div>
+  <div class="workflow-line done"></div>
+  <div class="workflow-step active">
+    <div class="step-num">⚙</div>
+    <span class="step-label">系统配置</span>
+  </div>
+</div>
+
+<div class="page-title">数据清理</div>
+
+<div class="card" style="background:#fef2f2;border:1px solid #fecaca;margin-bottom:20px;">
+  <h3 style="color:#991b1b;">⚠️ 危险操作</h3>
+  <p style="color:#991b1b;font-size:13px;">数据清理操作不可撤销，请谨慎操作。建议在清理前备份数据库文件。</p>
+</div>
+
+{{if .Data}}
+<div class="card">
+  <h3 style="margin-bottom:16px;">模块数据概览</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+    <div class="clean-card" style="border-left:4px solid #3b82f6;" data-module="projects">
+      <div class="clean-card-title">项目管理</div>
+      <div class="clean-card-count" data-count>{{.Data.ProjectCount}} 个</div>
+      <div class="clean-card-desc">包含项目及其版本</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/projects"
+              data-name="项目管理（含版本、环境、数据源、脚本、发布、执行、归档全部级联删除）">清空</button>
+    </div>
+
+    <div class="clean-card" style="border-left:4px solid #8b5cf6;" data-module="versions">
+      <div class="clean-card-title">版本管理</div>
+      <div class="clean-card-count" data-count>{{.Data.VersionCount}} 个</div>
+      <div class="clean-card-desc">项目版本号记录</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/versions"
+              data-name="版本管理">清空</button>
+    </div>
+
+    <div class="clean-card" style="border-left:4px solid #ec4899;" data-module="environments">
+      <div class="clean-card-title">环境配置</div>
+      <div class="clean-card-count" data-count>{{.Data.EnvCount}} 个</div>
+      <div class="clean-card-desc">开发/测试/生产环境</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/environments"
+              data-name="环境配置（含关联的数据源、执行记录）">清空</button>
+    </div>
+
+    <div class="clean-card" style="border-left:4px solid #f59e0b;" data-module="datasources">
+      <div class="clean-card-title">数据源</div>
+      <div class="clean-card-count" data-count>{{.Data.DatasourceCount}} 个</div>
+      <div class="clean-card-desc">数据库连接配置</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/datasources"
+              data-name="数据源（含关联的执行记录）">清空</button>
+    </div>
+
+    <div class="clean-card" style="border-left:4px solid #10b981;" data-module="scripts">
+      <div class="clean-card-title">SQL 脚本</div>
+      <div class="clean-card-count" data-count>{{.Data.ScriptCount}} 个</div>
+      <div class="clean-card-desc">脚本内容及元数据</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/scripts"
+              data-name="SQL脚本（含发布关联、执行记录、归档）">清空</button>
+    </div>
+
+    <div class="clean-card" style="border-left:4px solid #06b6d4;" data-module="releases">
+      <div class="clean-card-title">发布记录</div>
+      <div class="clean-card-count" data-count>{{.Data.ReleaseCount}} 个</div>
+      <div class="clean-card-desc">发布编排及脚本关联</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/releases"
+              data-name="发布记录（含脚本关联、执行记录、归档）">清空</button>
+    </div>
+
+    <div class="clean-card" style="border-left:4px solid #6366f1;" data-module="executions">
+      <div class="clean-card-title">执行记录</div>
+      <div class="clean-card-count" data-count>{{.Data.ExecutionCount}} 条</div>
+      <div class="clean-card-desc">脚本执行历史</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/executions"
+              data-name="执行记录">清空</button>
+    </div>
+
+    <div class="clean-card" style="border-left:4px solid #84cc16;" data-module="archives">
+      <div class="clean-card-title">归档记录</div>
+      <div class="clean-card-count" data-count>{{.Data.ArchiveCount}} 条</div>
+      <div class="clean-card-desc">Git 归档提交记录</div>
+      <button type="button" class="btn btn-sm btn-danger clean-btn"
+              data-url="/settings/clean/archives"
+              data-name="归档记录">清空</button>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="background:#fefce8;border:1px solid #fef08a;">
+  <h3 style="color:#a16207;">💡 清理说明</h3>
+  <ul style="color:#854d0e;font-size:13px;line-height:1.8;padding-left:20px;margin-top:8px;">
+    <li><strong>项目管理</strong>：清空后会级联删除所有项目相关数据（版本、环境、数据源、脚本、发布、执行、归档）</li>
+    <li><strong>SQL 脚本</strong>：清空脚本会同时移除发布关联、执行记录和归档记录</li>
+    <li><strong>发布记录</strong>：清空空发布关联，但保留脚本本身</li>
+    <li><strong>执行记录 / 归档记录</strong>：仅清空历史记录，不影响配置和脚本</li>
+    <li>所有操作均不可撤销，建议清理前先备份 <code>sql-mgr.db</code> 文件</li>
+  </ul>
+</div>
+{{end}}
+
+<script>
+document.querySelectorAll('.clean-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var url = btn.getAttribute('data-url');
+    var name = btn.getAttribute('data-name');
+    var card = btn.closest('.clean-card');
+
+    // 第一次确认
+    if (!confirm('【警告】确定要清空「' + name + '」的所有数据吗？')) {
+      return;
+    }
+
+    // 第二次确认
+    if (!confirm('再次确认：此操作不可撤销，确定继续清空「' + name + '」？')) {
+      return;
+    }
+
+    // 禁用按钮
+    btn.disabled = true;
+    btn.textContent = '清理中...';
+
+    // 异步提交
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.success) {
+        // 更新计数为0
+        var countEl = card.querySelector('[data-count]');
+        if (countEl) {
+          var text = countEl.textContent;
+          var unit = text.match(/个|条/);
+          countEl.textContent = '0 ' + (unit ? unit[0] : '');
+        }
+        alert('✅ 清理完成！\n\n' + data.message);
+      } else {
+        alert('❌ 清理失败：\n\n' + data.message);
+      }
+    })
+    .catch(function(err) {
+      alert('❌ 请求失败：' + err.message);
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = '清空';
+    });
+  });
+});
+</script>
+
+<style>
+.clean-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.clean-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+.clean-card-count {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+.clean-card-desc {
+  font-size: 12px;
+  color: #6b7280;
+  flex: 1;
+}
+.clean-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>
+{{end}}
