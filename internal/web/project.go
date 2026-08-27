@@ -433,20 +433,20 @@ func (s *Server) worstStatusPerReleaseEnv(releaseIDs []int64) (map[int64]map[int
 		args[i] = id
 	}
 
-	// Pick the latest record per (release, environment) using a correlated
-	// subquery on created_at.  SQLite doesn't support ROW_NUMBER() window
-	// functions in all versions, so we use MAX(created_at) + self-join.
+	// Pick the latest record per (release, environment) using MAX(id) +
+	// self-join.  execution_record has no created_at column; id (autoincrement)
+	// is a reliable proxy for insertion order.
 	query := `
 		SELECT er.release_id, er.environment_id, er.status
 		FROM execution_record er
 		INNER JOIN (
-		    SELECT release_id, environment_id, MAX(created_at) AS max_ts
+		    SELECT release_id, environment_id, MAX(id) AS max_id
 		    FROM execution_record
 		    WHERE release_id IN (` + placeholders + `)
 		    GROUP BY release_id, environment_id
 		) latest ON er.release_id = latest.release_id
 		        AND er.environment_id = latest.environment_id
-		        AND er.created_at = latest.max_ts
+		        AND er.id = latest.max_id
 	`
 	rows, err := s.deps.DB.Query(query, args...)
 	if err != nil {

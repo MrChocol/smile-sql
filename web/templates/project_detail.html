@@ -1,4 +1,5 @@
 {{define "content"}}
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
 {{if .Data}}
 <style>
   /* ========== Project Detail Page ========== */
@@ -374,8 +375,6 @@
     <a href="/releases?project={{.Data.Project.ID}}" class="btn btn-info">查看发布</a>
   </div>
 </div>
-
-{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
 
 <!-- 项目基本信息 -->
 <div class="card">
