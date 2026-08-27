@@ -87,8 +87,25 @@ func (s *Server) cleanProjects(w http.ResponseWriter, r *http.Request) {
 
 // cleanVersions deletes all project versions.
 func (s *Server) cleanVersions(w http.ResponseWriter, r *http.Request) {
-	if _, err := s.deps.DB.Exec(`DELETE FROM project_version`); err != nil {
+	tx, err := s.deps.DB.Begin()
+	if err != nil {
+		writeCleanError(w, "开始事务失败: "+err.Error())
+		return
+	}
+	defer tx.Rollback()
+
+	// sql_release.version_id references project_version(id); set to NULL first.
+	if _, err := tx.Exec(`UPDATE sql_release SET version_id = NULL WHERE version_id IS NOT NULL`); err != nil {
+		writeCleanError(w, "解除发布版本关联失败: "+err.Error())
+		return
+	}
+	if _, err := tx.Exec(`DELETE FROM project_version`); err != nil {
 		writeCleanError(w, "清空版本管理失败: "+err.Error())
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		writeCleanError(w, "提交事务失败: "+err.Error())
 		return
 	}
 	writeCleanSuccess(w, "所有版本记录已清空")
@@ -103,7 +120,7 @@ func (s *Server) cleanEnvironments(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`DELETE FROM execution_record WHERE datasource_id IN (SELECT id FROM datasource WHERE environment_id IN (SELECT id FROM environment))`); err != nil {
+	if _, err := tx.Exec(`DELETE FROM execution_record WHERE environment_id IN (SELECT id FROM environment)`); err != nil {
 		writeCleanError(w, "清空执行记录失败: "+err.Error())
 		return
 	}
@@ -159,10 +176,6 @@ func (s *Server) cleanScripts(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`DELETE FROM archive_log WHERE script_id IN (SELECT id FROM sql_script)`); err != nil {
-		writeCleanError(w, "清空归档记录失败: "+err.Error())
-		return
-	}
 	if _, err := tx.Exec(`DELETE FROM execution_record WHERE script_id IN (SELECT id FROM sql_script)`); err != nil {
 		writeCleanError(w, "清空执行记录失败: "+err.Error())
 		return

@@ -39,16 +39,16 @@ function submitForm() {
   })
   .then(function(data) {
     if (data.success) {
-      alert('\u2705 ' + data.message);
+      showToast('\u2705 ' + data.message);
       window.location.href = data.redirect;
     } else {
-      alert('\u274c ' + data.message);
+      showToast('\u274c ' + data.message);
       btn.disabled = false;
       btn.textContent = originalText;
     }
   })
   .catch(function(error) {
-    alert('\u274c 请求失败：' + error.message);
+    showToast('\u274c 请求失败：' + error.message);
     btn.disabled = false;
     btn.textContent = originalText;
   });

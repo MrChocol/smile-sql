@@ -117,13 +117,8 @@ document.querySelectorAll('.clean-btn').forEach(function(btn) {
     var name = btn.getAttribute('data-name');
     var card = btn.closest('.clean-card');
 
-    // 第一次确认
-    if (!confirm('【警告】确定要清空「' + name + '」的所有数据吗？')) {
-      return;
-    }
-
-    // 第二次确认
-    if (!confirm('再次确认：此操作不可撤销，确定继续清空「' + name + '」？')) {
+    // 确认
+    if (!confirm('确定要清空「' + name + '」的所有数据吗？此操作不可撤销。')) {
       return;
     }
 
@@ -133,8 +128,7 @@ document.querySelectorAll('.clean-btn').forEach(function(btn) {
 
     // 异步提交
     fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      method: 'POST'
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {
@@ -146,13 +140,13 @@ document.querySelectorAll('.clean-btn').forEach(function(btn) {
           var unit = text.match(/个|条/);
           countEl.textContent = '0 ' + (unit ? unit[0] : '');
         }
-        alert('✅ 清理完成！\n\n' + data.message);
+        showToast('✅ 清理完成！\n\n' + data.message);
       } else {
-        alert('❌ 清理失败：\n\n' + data.message);
+        showToast('❌ 清理失败：\n\n' + data.message);
       }
     })
     .catch(function(err) {
-      alert('❌ 请求失败：' + err.message);
+      showToast('❌ 请求失败：' + err.message);
     })
     .finally(function() {
       btn.disabled = false;

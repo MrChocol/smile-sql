@@ -138,14 +138,14 @@ function markSuccess(id) {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       location.reload();
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
   });
 }
 
@@ -162,14 +162,14 @@ function deleteExecution(id) {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       location.reload();
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
   });
 }
 </script>

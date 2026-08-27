@@ -126,14 +126,14 @@ function deleteScript(id, title) {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       location.reload();
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
   });
 }
 
@@ -170,7 +170,7 @@ document.addEventListener('change', function(e) {
 function batchExport() {
   var checkboxes = document.querySelectorAll('.row-check:checked');
   if (checkboxes.length === 0) {
-    alert('请先选择要导出的脚本');
+    showToast('请先选择要导出的脚本');
     return;
   }
   var ids = [];

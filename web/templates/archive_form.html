@@ -96,7 +96,7 @@ function submitArchive() {
 
   var releaseID = releaseSel.value;
   if (!releaseID) {
-    alert('请选择要归档的发布');
+    showToast('请选择要归档的发布');
     return;
   }
 
@@ -131,11 +131,11 @@ function submitArchive() {
         window.location.href = '/archives/' + data.id;
       }
     } else {
-      alert('归档失败\n\n' + result.message);
+      showToast('归档失败\n\n' + result.message);
     }
   })
   .catch(function(error) {
-    alert('请求失败: ' + error.message);
+    showToast('请求失败: ' + error.message);
   })
   .finally(function() {
     btn.disabled = false;

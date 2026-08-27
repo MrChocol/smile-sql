@@ -258,7 +258,7 @@ function submitPushForm() {
   // Collect selected script IDs
   var selectedIds = getSelectedScriptIds();
   if (selectedIds.length === 0) {
-    alert('请至少选择一个脚本');
+    showToast('请至少选择一个脚本');
     return;
   }
 
@@ -277,18 +277,18 @@ function submitPushForm() {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       if (data.redirect) {
         window.location.href = data.redirect;
       }
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
       btn.disabled = false;
       btn.textContent = '🚀 推送执行';
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
     btn.disabled = false;
     btn.textContent = '🚀 推送执行';
   });
@@ -309,16 +309,16 @@ function submitAddScript(releaseId) {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       location.reload();
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
       btn.disabled = false;
       btn.textContent = '添加';
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
     btn.disabled = false;
     btn.textContent = '添加';
   });
@@ -338,14 +338,14 @@ function removeScript(releaseId, scriptId, scriptTitle) {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       location.reload();
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
   });
 }
 
@@ -362,14 +362,14 @@ function clearAllScripts(releaseId) {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       location.reload();
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
   });
 }
 </script>

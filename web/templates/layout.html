@@ -484,6 +484,38 @@
     }
   </script>
 
+  <script>
+  function showToast(msg, type) {
+    if (!type) {
+      if (msg.indexOf('\u2705') === 0 || msg.indexOf('✅') === 0) type = 'success';
+      else if (msg.indexOf('\u274c') === 0 || msg.indexOf('❌') === 0) type = 'error';
+      else type = 'info';
+    }
+    var t = document.createElement('div');
+    t.className = 'toast toast-' + type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.classList.add('toast-show'); }, 10);
+    setTimeout(function(){
+      t.classList.remove('toast-show');
+      setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 2500);
+  }
+  </script>
+  <style>
+  .toast {
+    position: fixed; top: 20px; right: 20px; z-index: 99999;
+    padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 14px;
+    font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0; transform: translateX(100px); transition: all 0.3s ease;
+    max-width: 400px; word-break: break-word;
+  }
+  .toast-show { opacity: 1; transform: translateX(0); }
+  .toast-success { background: #16a34a; }
+  .toast-error { background: #dc2626; }
+  .toast-info { background: #2563eb; }
+  </style>
+
   {{else}}
   <main class="content">
     {{block "content" .}}{{end}}

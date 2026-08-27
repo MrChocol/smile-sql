@@ -53,18 +53,18 @@ function submitScriptForm() {
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.success) {
-      alert('✅ ' + data.message);
+      showToast('✅ ' + data.message);
       if (data.redirect) {
         window.location.href = data.redirect;
       }
     } else {
-      alert('❌ ' + data.message);
+      showToast('❌ ' + data.message);
       btn.disabled = false;
       btn.textContent = {{if .Data.IsEdit}}'保存修改'{{else}}'创建脚本'{{end}};
     }
   })
   .catch(function(error) {
-    alert('❌ 网络错误: ' + error.message);
+    showToast('❌ 网络错误: ' + error.message);
     btn.disabled = false;
     btn.textContent = {{if .Data.IsEdit}}'保存修改'{{else}}'创建脚本'{{end}};
   });
