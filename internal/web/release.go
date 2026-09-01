@@ -681,6 +681,10 @@ func (s *Server) ajaxAddReleaseScript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Auto-publish: if the release is still in draft status, bump it to published.
+	s.deps.DB.Exec(`UPDATE sql_release SET status = ? WHERE id = ? AND status = ?`,
+		model.ReleaseStatusPublished, id, model.ReleaseStatusDraft)
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":  true,
 		"message":  "脚本添加成功",

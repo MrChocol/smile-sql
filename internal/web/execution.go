@@ -622,11 +622,64 @@ func (s *Server) ajaxManualMark(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If marked as success, also update the script status and check
+	// whether all scripts in the release have been executed successfully.
+	if status == model.ExecStatusSuccess {
+		// Get the execution record to find script_id and release_id.
+		rec, err := execRepo.Get(id)
+		if err == nil && rec.ScriptID > 0 {
+			// Update script status to executed.
+			scriptRepo := repo.NewScriptRepo(s.deps.DB)
+			script, sErr := scriptRepo.Get(rec.ScriptID)
+			if sErr == nil && script.Status != model.ScriptStatusExecuted {
+				script.Status = model.ScriptStatusExecuted
+				scriptRepo.Update(&script)
+			}
+
+			// Check if all scripts in this release have at least one
+			// successful execution record.
+			if rec.ReleaseID > 0 {
+				allExecuted := s.checkAllScriptsExecuted(rec.ReleaseID)
+				if allExecuted {
+					s.deps.DB.Exec(`UPDATE sql_release SET status = ? WHERE id = ?`,
+						model.ReleaseStatusExecuting, rec.ReleaseID)
+				}
+			}
+		}
+	}
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":  true,
 		"message":  "标记成功",
 		"redirect": "/executions/" + strconv.FormatInt(id, 10),
 	})
+}
+
+// checkAllScriptsExecuted returns true if every script associated with the
+// release has at least one successful (success or manual_marked) execution
+// record.
+func (s *Server) checkAllScriptsExecuted(releaseID int64) bool {
+	// Count total scripts in the release.
+	var total int
+	err := s.deps.DB.QueryRow(
+		`SELECT COUNT(*) FROM release_script WHERE release_id = ?`, releaseID,
+	).Scan(&total)
+	if err != nil || total == 0 {
+		return false
+	}
+
+	// Count scripts that have at least one successful execution record.
+	var succeeded int
+	err = s.deps.DB.QueryRow(
+		`SELECT COUNT(DISTINCT script_id) FROM execution_record
+		  WHERE release_id = ? AND status IN ('success', 'manual_marked')`,
+		releaseID,
+	).Scan(&succeeded)
+	if err != nil {
+		return false
+	}
+
+	return succeeded >= total
 }
 
 // ajaxDeleteExecution handles POST /executions/ajax/{id}/delete — deletes
